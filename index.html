@@ -89,6 +89,15 @@ body.theme-light{
   --header-bg:rgba(242,242,247,.82);
   --car-hero-bg:linear-gradient(135deg,#fff7ed,#ffffff);--shadow:0 1px 3px rgba(0,0,0,.04),0 1px 10px rgba(0,0,0,.03);
 }
+body.theme-platinum{
+  --bg:#0a0a0c;--surface:#151518;--surface2:#1e1e22;--border:#33333a;
+  --accent:#c7c9d1;--accent2:#eceef2;--green:#34c759;--red:#e5484d;
+  --yellow:#eab308;--blue:#7d8ba1;--purple:#a855f7;
+  --text:#f2f2f4;--muted:#8d8d95;
+  --header-bg:linear-gradient(135deg,#050506,#1a1a1e 55%,#050506);
+  --car-hero-bg:linear-gradient(135deg,#1a1a1e,#0d0d10);
+  --shadow:0 1px 3px rgba(0,0,0,.55),0 1px 14px rgba(0,0,0,.45);
+}
 
 /* THEME MODAL */
 .theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:4px}
@@ -108,7 +117,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Cairo',sans-ser
 /* HEADER */
 .header{height:54px;background:var(--header-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;z-index:50}
 .header h1{font-size:18px;font-weight:800;letter-spacing:-.2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-#headerCarName{font-size:11px;color:var(--muted)}
 .theme-icon-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:4px;touch-action:manipulation;transition:transform .15s cubic-bezier(.34,1.56,.64,1)}
 .theme-icon-btn:active{transform:scale(.85)}
 
@@ -265,7 +273,8 @@ textarea{resize:vertical;min-height:65px}
 <div class="header">
   <h1>🚗 أجندة السيارة</h1>
   <div style="display:flex;align-items:center;gap:6px">
-    <div id="headerCarName">لا يوجد سيارة</div>
+    <select id="carSwitcher" onchange="onCarSwitcherChange(this.value)" title="التبديل بين العربيات"
+      style="max-width:110px;padding:5px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:Cairo,sans-serif;font-size:11px;font-weight:700"></select>
     <button class="theme-icon-btn" onclick="openModal('backupModal')" title="حفظ واسترجاع">💾</button>
     <button class="theme-icon-btn" onclick="openModal('themeModal')" title="الثيمات">🎨</button>
   </div>
@@ -285,6 +294,10 @@ textarea{resize:vertical;min-height:65px}
 <!-- CAR -->
 <div id="page-car" class="page">
   <div class="sec-hdr"><h2>🚘 السيارة</h2><button class="btn btn-primary btn-sm" onclick="openCarModal()">✏️ تعديل</button></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addCar()">➕ إضافة عربية جديدة</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteActiveCar()">🗑️ حذف هذه العربية</button>
+  </div>
   <div id="carDisplay"></div>
 </div>
 
@@ -340,6 +353,7 @@ textarea{resize:vertical;min-height:65px}
       <option value="cost">💰 التكلفة</option>
     </select>
   </div>
+  <div id="fuelChartWrap"></div>
   <div id="fuelList" class="rec-list"></div>
 </div>
 
@@ -352,6 +366,7 @@ textarea{resize:vertical;min-height:65px}
 <!-- ALERTS -->
 <div id="page-alerts" class="page">
   <div class="sec-hdr"><h2>🔔 التنبيهات</h2><button class="btn btn-primary btn-sm" onclick="openAlertModal()">+ إضافة</button></div>
+  <button class="btn btn-primary btn-block" id="notifToggleBtn" style="margin-bottom:10px" onclick="toggleNotifications()">🔕 تفعيل تنبيهات الأجهزة</button>
   <div id="alertsList"></div>
 </div>
 
@@ -565,6 +580,10 @@ textarea{resize:vertical;min-height:65px}
       <div class="theme-circle" style="background:linear-gradient(135deg,#f59e0b,#130f00)"></div>
       <div class="theme-name">ذهبي</div>
     </div>
+    <div class="theme-btn" onclick="setTheme('platinum')" id="tbtn_platinum">
+      <div class="theme-circle" style="background:linear-gradient(135deg,#eceef2,#0a0a0c)"></div>
+      <div class="theme-name">فخامة ألمانية</div>
+    </div>
     <div class="theme-btn" onclick="setTheme('light')" id="tbtn_light">
       <div class="theme-circle" style="background:linear-gradient(135deg,#f97316,#f1f5f9)"></div>
       <div class="theme-name">فاتح</div>
@@ -642,7 +661,78 @@ if(!D.alerts) D.alerts=[];
 if(!D.fuel) D.fuel=[];
 if(!D.settle) D.settle=[];
 
-function save(){localStorage.setItem('CMD3',JSON.stringify(D))}
+// ══ MULTI-CAR ══
+// كل عربية ليها نسخة منفصلة من: بيانات العربية، الزيوت، الصيانة، البنزين، التنبيهات، الملاحظات
+// جهات الاتصال (الورش/الفنيين) مشتركة بين كل العربيات
+function migrateCars(){
+  if(!D.cars || !D.cars.length){
+    D.cars=[{id:1,name:(D.car&&D.car.brand)?(D.car.brand+(D.car.model?' '+D.car.model:'')):'العربية 1',
+      data:{car:D.car,oil:D.oil,maintenance:D.maintenance,fuel:D.fuel,alerts:D.alerts,settle:D.settle}}];
+    D.activeCarId=1;
+  }
+  if(!D.activeCarId || !D.cars.find(c=>c.id===D.activeCarId)) D.activeCarId=D.cars[0].id;
+  loadCarData(getActiveCarEntry());
+}
+function getActiveCarEntry(){ return D.cars.find(c=>c.id===D.activeCarId)||D.cars[0]; }
+function loadCarData(entry){
+  D.car=entry.data.car||{};
+  D.oil=entry.data.oil||[];
+  D.maintenance=entry.data.maintenance||[];
+  D.fuel=entry.data.fuel||[];
+  D.alerts=entry.data.alerts||[];
+  D.settle=entry.data.settle||[];
+}
+function switchCar(id){
+  id=Number(id);
+  if(id===D.activeCarId) return;
+  D.activeCarId=id;
+  loadCarData(getActiveCarEntry());
+  save();
+  renderCarSwitcher();
+  renderHome();
+  showToast('🚗 تم التبديل إلى '+getActiveCarEntry().name);
+}
+function addCar(){
+  const name=(prompt('اسم العربية الجديدة (مثلاً: هيونداي فيرنا)')||'').trim();
+  if(!name) return;
+  const newId=Math.max(...D.cars.map(c=>c.id))+1;
+  D.cars.push({id:newId,name,data:{car:{},oil:[],maintenance:[],fuel:[],alerts:[],settle:[]}});
+  D.activeCarId=newId;
+  loadCarData(getActiveCarEntry());
+  save();
+  renderCarSwitcher();
+  renderHome();
+  showToast('✅ تم إضافة '+name);
+}
+function deleteActiveCar(){
+  if(D.cars.length<=1){ showToast('⚠️ لازم تفضل عربية واحدة على الأقل'); return; }
+  const entry=getActiveCarEntry();
+  showConfirm('حذف العربية','هل تريد حذف "'+entry.name+'" وكل بياناتها؟ لا يمكن التراجع.',()=>{
+    D.cars=D.cars.filter(c=>c.id!==entry.id);
+    D.activeCarId=D.cars[0].id;
+    loadCarData(getActiveCarEntry());
+    save();
+    renderCarSwitcher();
+    renderHome();
+    showToast('🗑️ تم حذف العربية');
+  });
+}
+function renderCarSwitcher(){
+  const sel=document.getElementById('carSwitcher');
+  if(!sel) return;
+  sel.innerHTML=D.cars.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')+`<option value="__add__">➕ إضافة عربية</option>`;
+  sel.value=String(D.activeCarId);
+}
+function onCarSwitcherChange(val){
+  if(val==='__add__'){ renderCarSwitcher(); addCar(); return; }
+  switchCar(val);
+}
+migrateCars();
+
+function save(){
+  if(D.cars){ const entry=getActiveCarEntry(); if(entry) entry.data.car=D.car; }
+  localStorage.setItem('CMD3',JSON.stringify(D));
+}
 const v=id=>document.getElementById(id).value.trim();
 const el=id=>document.getElementById(id);
 const today=()=>new Date().toISOString().split('T')[0];
@@ -665,7 +755,7 @@ function renderPage(p){
 // ══ HOME ══
 function renderHome(){
   const car=D.car;
-  el('headerCarName').textContent=car.brand?car.brand+' '+(car.model||''):'لا يوجد سيارة';
+  renderCarSwitcher();
   el('homeSummary').innerHTML=car.brand?`<div class="car-hero">
     <div class="cn">${car.brand} ${car.model||''}</div>
     <div class="cm">${car.year||''} • ${car.color||''} • ${car.plate||''}</div>
@@ -831,6 +921,63 @@ function renderHomeTips(){
 
   tipsEl.innerHTML=tipsHtml;
 }
+// ══ NOTIFICATIONS ══
+// تنبيهات محلية: بتشتغل لما التطبيق يتفتح (مش تنبيهات push حقيقية من سيرفر،
+// لأن مفيش باك-إند — لكن ده بيغطي حالة إن المستخدم بيفتح التطبيق بشكل يومي تقريباً)
+const NOTIF_ENABLED_KEY='cmd3_notif_enabled';
+const NOTIF_LAST_KEY='cmd3_notif_last';
+function notificationsSupported(){ return 'Notification' in window; }
+function notificationsEnabled(){ return notificationsSupported() && Notification.permission==='granted' && localStorage.getItem(NOTIF_ENABLED_KEY)==='1'; }
+async function toggleNotifications(){
+  if(!notificationsSupported()){ showToast('⚠️ المتصفح ده مش بيدعم التنبيهات'); return; }
+  if(notificationsEnabled()){
+    localStorage.setItem(NOTIF_ENABLED_KEY,'0');
+    showToast('🔕 تم إيقاف التنبيهات');
+    renderNotifBtn();
+    return;
+  }
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){
+    localStorage.setItem(NOTIF_ENABLED_KEY,'1');
+    showToast('🔔 تم تفعيل التنبيهات');
+    checkAndNotifyAlerts(true);
+    if('serviceWorker' in navigator){
+      try{
+        const reg=await navigator.serviceWorker.ready;
+        if('periodicSync' in reg) await reg.periodicSync.register('cmd3-alerts-check',{minInterval:12*60*60*1000});
+      }catch(e){ /* غير مدعوم في كل المتصفحات — التنبيهات هتشتغل برضه لما التطبيق يتفتح */ }
+    }
+  } else {
+    showToast('❌ تم رفض إذن التنبيهات من المتصفح');
+  }
+  renderNotifBtn();
+}
+function renderNotifBtn(){
+  const b=document.getElementById('notifToggleBtn');
+  if(!b) return;
+  b.textContent=notificationsEnabled()?'🔔 التنبيهات مفعّلة (اضغط للإيقاف)':'🔕 تفعيل تنبيهات الأجهزة';
+  b.className='btn btn-block '+(notificationsEnabled()?'btn-ghost':'btn-primary');
+}
+async function showAppNotification(title,body,tag){
+  if('serviceWorker' in navigator){
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      await reg.showNotification(title,{body,tag,dir:'rtl',lang:'ar'});
+      return;
+    }catch(e){ /* fallback below */ }
+  }
+  try{ new Notification(title,{body}); }catch(e){}
+}
+function checkAndNotifyAlerts(force){
+  if(!notificationsEnabled()) return;
+  const today=new Date().toISOString().split('T')[0];
+  if(!force && localStorage.getItem(NOTIF_LAST_KEY)===today) return;
+  localStorage.setItem(NOTIF_LAST_KEY,today);
+  getActiveAlerts().forEach(a=>{
+    showAppNotification('🔔 '+(a.title||'تنبيه أجندة السيارة')+' — '+getActiveCarEntry().name, a.desc||'');
+  });
+}
+
 function getActiveAlerts(){
   const res=[];const td=new Date();td.setHours(0,0,0,0);const curKm=Number(D.car.km)||0;
   D.alerts.forEach(a=>{if(a.done)return;
@@ -915,6 +1062,7 @@ function openCarModal(){
 }
 function saveCar(){
   D.car={brand:v('cm_brand'),model:v('cm_model'),year:v('cm_year'),color:v('cm_color'),plate:v('cm_plate'),engine:v('cm_engine'),fuel:v('cm_fuel'),trans:v('cm_trans'),km:v('cm_km'),buydate:v('cm_buydate'),notes:v('cm_notes')};
+  if(D.cars){ const entry=getActiveCarEntry(); if(D.car.brand) entry.name=D.car.brand+(D.car.model?' '+D.car.model:''); renderCarSwitcher(); }
   save();closeModal('carModal');renderCar();renderHome();
 }
 
@@ -1057,7 +1205,41 @@ function calcFuel(){
   if(dist<=0){re.innerHTML=`<div style="color:var(--red);text-align:center;font-size:13px;margin-top:10px">⚠️ العداد الثاني لازم أكبر</div>`;return;}
   autoCalcFuel();
 }
+function buildFuelConsumptionSeries(){
+  const wk=[...D.fuel].filter(f=>f.km&&f.liters).sort((a,b)=>Number(a.km)-Number(b.km));
+  const pts=[];
+  for(let i=1;i<wk.length;i++){
+    const dist=Number(wk[i].km)-Number(wk[i-1].km);
+    const liters=Number(wk[i].liters);
+    if(dist>0&&liters>0) pts.push({date:wk[i].date||'',cons:+(liters/dist*100).toFixed(2)});
+  }
+  return pts;
+}
+function renderFuelChart(){
+  const wrap=el('fuelChartWrap'); if(!wrap) return;
+  const pts=buildFuelConsumptionSeries();
+  if(pts.length<2){ wrap.innerHTML=''; return; }
+  const w=320,h=110,pad=26;
+  const vals=pts.map(p=>p.cons);
+  const maxV=Math.max(...vals)*1.15||1, minV=Math.min(...vals)*0.85;
+  const range=(maxV-minV)||1;
+  const stepX=(w-pad*2)/(pts.length-1);
+  const xy=pts.map((p,i)=>({x:pad+i*stepX,y:h-pad-((p.cons-minV)/range)*(h-pad*2)}));
+  const line=xy.map(p=>p.x+','+p.y).join(' ');
+  const circles=xy.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="var(--accent)"><title>${pts[i].date}: ${pts[i].cons} ل/100كم</title></circle>`).join('');
+  wrap.innerHTML=`<div class="card">
+    <h3>📈 اتجاه استهلاك الوقود (لتر/100كم)</h3>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;overflow:visible">
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${circles}
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
+      <span>${pts[0].date}</span><span>${pts[pts.length-1].date}</span>
+    </div>
+  </div>`;
+}
 function renderFuel(){
+  renderFuelChart();
   const le=el('fuelList');
   if(!D.fuel.length){le.innerHTML=`<div class="empty"><div class="ei">⛽</div><p>لم تسجل أي تعبئة بعد</p></div>`;return;}
   const q=(el('fuelSearch')?.value||'').trim().toLowerCase();
@@ -1130,6 +1312,7 @@ function deleteContact(idx){showConfirm('حذف جهة الاتصال','هل ت�
 // ══ ALERTS ══
 function toggleAlertType(val){el('al_date_group').style.display=val==='date'?'':'none';el('al_km_group').style.display=val==='km'?'':'none';}
 function renderAlerts(){
+  renderNotifBtn();
   const le=el('alertsList');
   if(!D.alerts.length){le.innerHTML=`<div class="empty"><div class="ei">🔔</div><p>لم تضف أي تنبيهات</p></div>`;return;}
   le.innerHTML=D.alerts.map((a,i)=>`<div class="rec-item" style="${a.done?'opacity:.5':''}">
@@ -1311,7 +1494,8 @@ function importBackup(){
       if(!D.alerts) D.alerts=[];
       if(!D.fuel) D.fuel=[];
       if(!D.settle) D.settle=[];
-      save(); renderHome();
+      migrateCars();
+      save(); renderCarSwitcher(); renderHome();
       el('importText').value='';
       closeModal('backupModal');
       showToast('✅ تم استرجاع البيانات بنجاح!');
@@ -1321,8 +1505,9 @@ function importBackup(){
 
 function resetAll(){
   showConfirm('⚠️ مسح كل البيانات','هذا الإجراء لا يمكن التراجع عنه! هل أنت متأكد؟',()=>{
-    D={car:{},oil:[],maintenance:[],contacts:[],alerts:[],fuel:[],settle:[]};
-    save(); renderHome();
+    D={car:{},oil:[],maintenance:[],contacts:[],alerts:[],fuel:[],settle:[],cars:null,activeCarId:null};
+    migrateCars();
+    save(); renderCarSwitcher(); renderHome();
     closeModal('backupModal');
     showToast('🗑️ تم مسح كل البيانات');
   });
@@ -1337,7 +1522,7 @@ function showToast(msg){
 }
 
 // ══ THEMES ══
-const themes=['orange','blue','green','purple','red','cyan','gold','light'];
+const themes=['orange','blue','green','purple','red','cyan','gold','platinum','light'];
 function setTheme(t){
   themes.forEach(th=>document.body.classList.remove('theme-'+th));
   document.body.classList.add('theme-'+t);
@@ -1454,6 +1639,8 @@ async function verifyDevice(){
 renderHome();
 toggleOilFilters('زيت المحرك');
 loadTheme();
+renderNotifBtn();
+checkAndNotifyAlerts();
 document.addEventListener('DOMContentLoaded', function(){
   if(!isActivated()){
     document.getElementById('activationScreen').style.display='flex';
