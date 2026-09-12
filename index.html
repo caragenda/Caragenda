@@ -619,6 +619,12 @@ textarea{resize:vertical;min-height:65px}
     </div>
   </div>
 
+  <div style="background:rgba(199,201,209,.08);border:1px solid rgba(199,201,209,.3);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:8px">🖨️ تصدير تقرير PDF</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">تقرير مطبوع بكل سجلات العربية الحالية (زيوت، صيانة، بنزين) — هيفتح نافذة طباعة، اختر "حفظ كـ PDF"</div>
+    <button class="btn btn-primary btn-block" onclick="exportPDFReport()">📄 تصدير تقرير العربية الحالية</button>
+  </div>
+
   <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="font-size:13px;font-weight:800;color:var(--red);margin-bottom:6px">⚠️ مسح كل البيانات</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">احذف كل البيانات وابدأ من الأول</div>
@@ -1460,6 +1466,58 @@ function exportCopy(){
   });
 }
 
+function exportPDFReport(){
+  const car=D.car;
+  const carName=car.brand?car.brand+' '+(car.model||''):(D.cars?getActiveCarEntry().name:'عربيتي');
+  const today=new Date().toLocaleDateString('ar-EG');
+  const esc=s=>String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const oilRows=[...D.oil].sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .map(o=>`<tr><td>${esc(o.date)}</td><td>${esc(o.type)}</td><td>${esc(o.brand)}</td><td>${o.km?Number(o.km).toLocaleString():''}</td><td>${o.price?Number(o.price).toLocaleString()+' ج':''}</td></tr>`).join('');
+  const maintRows=[...D.maintenance].sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.title)}</td><td>${m.km?Number(m.km).toLocaleString():''}</td><td>${m.cost?Number(m.cost).toLocaleString()+' ج':''}</td><td>${esc(m.notes)}</td></tr>`).join('');
+  const fuelRows=[...D.fuel].sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .map(f=>`<tr><td>${esc(f.date)}</td><td>${f.km?Number(f.km).toLocaleString():''}</td><td>${esc(f.liters)}</td><td>${f.total?Number(f.total).toLocaleString()+' ج':''}</td><td>${esc(f.station)}</td></tr>`).join('');
+  const totalOil=D.oil.reduce((s,o)=>s+(Number(o.price)||0),0);
+  const totalMaint=D.maintenance.reduce((s,m)=>s+(Number(m.cost)||0),0);
+  const totalFuel=D.fuel.reduce((s,f)=>s+(Number(f.total)||0),0);
+  const html=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير ${esc(carName)}</title>
+  <style>
+    body{font-family:Tahoma,Arial,sans-serif;padding:24px;color:#111}
+    h1{font-size:20px;margin-bottom:2px}
+    .sub{color:#666;font-size:12px;margin-bottom:18px}
+    h2{font-size:15px;margin:22px 0 8px;border-bottom:2px solid #888;padding-bottom:4px}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
+    th,td{border:1px solid #ddd;padding:6px 8px;text-align:right}
+    th{background:#f0f0f0}
+    .totals{display:flex;flex-wrap:wrap;gap:16px;margin-top:6px;font-size:13px;font-weight:bold}
+    .empty-note{color:#999;font-size:12px}
+    @media print{ body{padding:0} }
+  </style></head><body>
+    <h1>🚗 تقرير ${esc(carName)}</h1>
+    <div class="sub">${car.plate?'رقم اللوحة: '+esc(car.plate)+' • ':''}${car.year?'موديل '+esc(car.year)+' • ':''}تاريخ التقرير: ${today}</div>
+
+    <h2>🛢️ سجل الزيوت</h2>
+    ${D.oil.length?`<table><tr><th>التاريخ</th><th>النوع</th><th>الماركة</th><th>الكيلومترات</th><th>السعر</th></tr>${oilRows}</table>`:'<div class="empty-note">لا توجد سجلات</div>'}
+
+    <h2>🔧 سجل الصيانة</h2>
+    ${D.maintenance.length?`<table><tr><th>التاريخ</th><th>البند</th><th>الكيلومترات</th><th>التكلفة</th><th>ملاحظات</th></tr>${maintRows}</table>`:'<div class="empty-note">لا توجد سجلات</div>'}
+
+    <h2>⛽ سجل تعبئة البنزين</h2>
+    ${D.fuel.length?`<table><tr><th>التاريخ</th><th>الكيلومترات</th><th>اللتر</th><th>الإجمالي</th><th>المحطة</th></tr>${fuelRows}</table>`:'<div class="empty-note">لا توجد سجلات</div>'}
+
+    <h2>💰 الإجمالي</h2>
+    <div class="totals">
+      <span>زيوت: ${totalOil.toLocaleString()} ج</span>
+      <span>صيانة: ${totalMaint.toLocaleString()} ج</span>
+      <span>بنزين: ${totalFuel.toLocaleString()} ج</span>
+      <span>الإجمالي الكلي: ${(totalOil+totalMaint+totalFuel).toLocaleString()} ج</span>
+    </div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){ showToast('⚠️ افتح نافذة منبثقة (Popup) واسمح بيها من المتصفح وحاول تاني'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 400);
+}
 function downloadBackup(){
   const json=JSON.stringify(D,null,2);
   const blob=new Blob([json],{type:'application/json'});
