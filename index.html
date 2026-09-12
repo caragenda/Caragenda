@@ -1599,6 +1599,7 @@ function loadTheme(){
 }
 
 // ══ ACTIVATION ══
+// المفاتيح العشرة القديمة (الموزّعة قبل ربط التطبيق بلوحة الإدارة) — تفضل شغالة كـ fallback محلي
 const VALID_HASHES = [
   'a0fbb56d3c074b1191fcf4d40a02df861d4437df2b22caf43557f67fd9cb7bb1',
   '154fc284f72cd9119f1a31cf17b0b9341a6bde24edc5fe24a1a96c8907a768b5',
@@ -1612,9 +1613,31 @@ const VALID_HASHES = [
   '5a42b622cf26e74936247ccb1a2f54b9c2cd68f7e65329b5c9bb83e266231c47'
 ];
 const _S = '\x53\x40\x33\x64';
-const ACT_KEY  = 'cmd3_activated';
-const DEV_KEY  = 'cmd3_device';
-const BIND_KEY = 'cmd3_binding';  // keyHash => deviceFingerprint
+const ACT_KEY     = 'cmd3_activated';
+const DEV_KEY      = 'cmd3_device';
+const BIND_KEY      = 'cmd3_binding';  // keyHash => deviceFingerprint (نظام قديم محلي)
+const KEYVAL_KEY    = 'cmd3_keyval';   // المفتاح الفعلي المُستخدم (نظام Firebase الجديد)
+const REMOTE_KEY    = 'cmd3_remote';   // '1' لو التفعيل تم عن طريق لوحة الإدارة (Firestore)
+const LASTCHECK_KEY = 'cmd3_lastcheck';
+
+// نفس مشروع Firebase بتاع لوحة إدارة المفاتيح
+const CAR_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBOt9N8XJrdC921gVKZ4pWjfYA5DQlmC50",
+  authDomain: "medical-refrence.firebaseapp.com",
+  projectId: "medical-refrence",
+  storageBucket: "medical-refrence.firebasestorage.app",
+  messagingSenderId: "729432807899",
+  appId: "1:729432807899:web:fa3dcb8c81534faa35affe"
+};
+let _carFsCache = null;
+async function getCarFirestore(){
+  if (_carFsCache) return _carFsCache;
+  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  const fs = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+  const app = initializeApp(CAR_FIREBASE_CONFIG);
+  _carFsCache = { db: fs.getFirestore(app), fs };
+  return _carFsCache;
+}
 
 async function hashKey(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -1639,43 +1662,107 @@ function isActivated(){
   return localStorage.getItem(ACT_KEY)==='1';
 }
 
-async function checkActivation(){
-  const val = document.getElementById('actInput').value.trim().toUpperCase();
-  const err = document.getElementById('actErr');
-  if(!val){ err.textContent='⚠️ أدخل مفتاح التفعيل'; return; }
-
-  const h = await hashKey(val + _S);
-  if(!VALID_HASHES.includes(h)){
-    err.textContent='❌ مفتاح التفعيل غير صحيح';
-    const inp = document.getElementById('actInput');
-    inp.style.borderColor='#ef4444';
-    setTimeout(()=>{ inp.style.borderColor=''; err.textContent=''; }, 1400);
-    return;
-  }
-
-  // Check device binding
-  const deviceFP = await getDeviceFingerprint();
-  const bindings = JSON.parse(localStorage.getItem(BIND_KEY)||'{}');
-
-  if(bindings[h] && bindings[h] !== deviceFP){
-    // Key already used on a different device
-    err.textContent='⛔ هذا المفتاح مفعّل على جهاز آخر';
-    const inp = document.getElementById('actInput');
-    inp.style.borderColor='#ef4444';
-    setTimeout(()=>{ inp.style.borderColor=''; err.textContent=''; }, 2500);
-    return;
-  }
-
-  // Bind key to this device
-  bindings[h] = deviceFP;
-  localStorage.setItem(BIND_KEY, JSON.stringify(bindings));
+function finishActivation(){
   localStorage.setItem(ACT_KEY, '1');
-  localStorage.setItem(DEV_KEY, deviceFP);
-
   const scr = document.getElementById('activationScreen');
   scr.style.transition='opacity .4s';
   scr.style.opacity='0';
   setTimeout(()=>{ scr.style.display='none'; }, 420);
+}
+
+function showActErr(msg, ms){
+  const err = document.getElementById('actErr');
+  const inp = document.getElementById('actInput');
+  err.textContent = msg;
+  inp.style.borderColor='#ef4444';
+  setTimeout(()=>{ inp.style.borderColor=''; err.textContent=''; }, ms||2200);
+}
+
+// يحاول التحقق من المفتاح عن طريق لوحة إدارة المفاتيح (Firestore)
+// يرجع: 'ok' | 'not-found' | 'invalid' | 'wrong-project' | 'revoked' | 'expired' | 'other-device' | 'exhausted' | 'offline'
+async function tryRemoteActivation(val, pin){
+  let db, fsMod;
+  try {
+    const r = await getCarFirestore();
+    db = r.db; fsMod = r.fs;
+  } catch(e) { return 'offline'; }
+
+  const { collection, query, where, getDocs, doc, updateDoc, increment } = fsMod;
+  let snap;
+  try {
+    snap = await getDocs(query(collection(db,'keys'), where('key','==', val)));
+  } catch(e) { return 'offline'; }
+
+  if (snap.empty) return 'not-found';
+  const docSnap = snap.docs[0];
+  const k = docSnap.data();
+
+  const isCarProject = k.project ? k.project === 'Car Agenda' : val.startsWith('CAR-');
+  if (!isCarProject) return 'wrong-project';
+  if (String(k.pin_code||'') !== pin) return 'invalid';
+  if (k.status === 'revoked') return 'revoked';
+  if (k.expiry_date && new Date(k.expiry_date) < new Date()) return 'expired';
+
+  const deviceFP = await getDeviceFingerprint();
+  if (k.device_id && k.device_id !== deviceFP) return 'other-device';
+  if (k.max_uses > 0 && (k.use_count||0) >= k.max_uses && k.device_id !== deviceFP) return 'exhausted';
+
+  if (!k.device_id) {
+    try {
+      await updateDoc(doc(db,'keys', docSnap.id), {
+        status: 'used',
+        device_id: deviceFP,
+        activated_at: new Date().toISOString(),
+        use_count: increment(1),
+        device_type: 'Mobile',
+        browser: 'Car Agenda App'
+      });
+    } catch(e) { /* حتى لو الكتابة فشلت (صلاحيات مثلاً) خلي التفعيل يعدي محليًا */ }
+  }
+
+  localStorage.setItem(DEV_KEY, deviceFP);
+  localStorage.setItem(KEYVAL_KEY, val);
+  localStorage.setItem(REMOTE_KEY, '1');
+  return 'ok';
+}
+
+async function checkActivation(){
+  const val = document.getElementById('actInput').value.trim().toUpperCase();
+  const pin = document.getElementById('actPin').value.trim();
+  const btn = document.getElementById('actBtn');
+  if(!val){ showActErr('⚠️ أدخل مفتاح التفعيل'); return; }
+
+  btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = '... جاري التحقق';
+
+  try {
+    const result = await tryRemoteActivation(val, pin);
+    if (result === 'ok')            { finishActivation(); return; }
+    if (result === 'invalid')       { showActErr('❌ المفتاح أو الرقم السري غير صحيح'); return; }
+    if (result === 'wrong-project') { showActErr('❌ هذا المفتاح غير خاص بهذا التطبيق'); return; }
+    if (result === 'revoked')       { showActErr('⛔ تم إلغاء هذا المفتاح'); return; }
+    if (result === 'expired')       { showActErr('⏰ انتهت صلاحية هذا المفتاح'); return; }
+    if (result === 'other-device')  { showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600); return; }
+    if (result === 'exhausted')     { showActErr('⛔ تم استنفاذ عدد مرات استخدام هذا المفتاح', 2600); return; }
+    // 'not-found' أو 'offline' → جرّب النظام القديم (المفاتيح العشرة الثابتة)
+
+    const h = await hashKey(val + _S);
+    if(!VALID_HASHES.includes(h)){
+      showActErr('❌ مفتاح التفعيل غير صحيح');
+      return;
+    }
+    const deviceFP = await getDeviceFingerprint();
+    const bindings = JSON.parse(localStorage.getItem(BIND_KEY)||'{}');
+    if(bindings[h] && bindings[h] !== deviceFP){
+      showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600);
+      return;
+    }
+    bindings[h] = deviceFP;
+    localStorage.setItem(BIND_KEY, JSON.stringify(bindings));
+    localStorage.setItem(DEV_KEY, deviceFP);
+    finishActivation();
+  } finally {
+    btn.disabled = false; btn.textContent = oldTxt;
+  }
 }
 
 // On every load: verify this device still matches the bound fingerprint
@@ -1693,6 +1780,34 @@ async function verifyDevice(){
   }
 }
 
+// فحص دوري (مرة كل يوم بحد أقصى) لمفاتيح لوحة الإدارة فقط — يلغي التفعيل تلقائيًا لو المفتاح اتلغى أو انتهى من اللوحة
+async function periodicRevalidate(){
+  if(!isActivated()) return;
+  if(localStorage.getItem(REMOTE_KEY) !== '1') return; // مفتاح من النظام القديم، مفيش سيرفر يتفحص منه
+  const today = new Date().toISOString().slice(0,10);
+  if(localStorage.getItem(LASTCHECK_KEY) === today) return;
+  const val = localStorage.getItem(KEYVAL_KEY);
+  if(!val) return;
+  try {
+    const { db, fs } = await getCarFirestore();
+    const { collection, query, where, getDocs } = fs;
+    const snap = await getDocs(query(collection(db,'keys'), where('key','==', val)));
+    if(snap.empty) return;
+    const k = snap.docs[0].data();
+    const revoked = k.status === 'revoked';
+    const expired = k.expiry_date && new Date(k.expiry_date) < new Date();
+    if(revoked || expired){
+      localStorage.removeItem(ACT_KEY);
+      localStorage.removeItem(DEV_KEY);
+      localStorage.removeItem(REMOTE_KEY);
+      localStorage.removeItem(KEYVAL_KEY);
+      location.reload();
+      return;
+    }
+    localStorage.setItem(LASTCHECK_KEY, today);
+  } catch(e) { /* أوفلاين — تجاهل ونكمل عادي */ }
+}
+
 // INIT
 renderHome();
 toggleOilFilters('زيت المحرك');
@@ -1704,6 +1819,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('activationScreen').style.display='flex';
   } else {
     verifyDevice();
+    periodicRevalidate();
   }
 });
 </script>
@@ -1743,9 +1859,11 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="act-title">أجندة السيارة</div>
   <div class="act-sub">أدخل مفتاح التفعيل للمتابعة</div>
   <div class="act-box">
-    <input class="act-input" id="actInput" type="text" placeholder="XXXX-XXXX-XXXX-XXXX"
+    <input class="act-input" id="actInput" type="text" placeholder="CAR-XXXX-XXXX"
+      onkeydown="if(event.key==='Enter') document.getElementById('actPin').focus()">
+    <input class="act-input" id="actPin" type="text" inputmode="numeric" maxlength="6" placeholder="الرقم السري (PIN) — إن وُجد"
       onkeydown="if(event.key==='Enter') checkActivation()">
-    <button class="act-btn" onclick="checkActivation()">🔓 تفعيل</button>
+    <button class="act-btn" id="actBtn" onclick="checkActivation()">🔓 تفعيل</button>
     <div class="act-err" id="actErr"></div>
   </div>
 </div>
