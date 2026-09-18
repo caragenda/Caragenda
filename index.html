@@ -663,6 +663,16 @@ textarea{resize:vertical;min-height:65px}
     <div id="exportPreview" style="display:none;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);word-break:break-all;max-height:80px;overflow-y:auto;direction:ltr;font-family:monospace"></div>
   </div>
 
+  <div style="background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.3);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:800;color:#0ea5e9;margin-bottom:8px" data-i18n="backup_cloud_title">☁️ النسخ الاحتياطي السحابي</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px" data-i18n="backup_cloud_desc">بيتحفظ تلقائياً كل 24 ساعة أو بزرار «حفظ الآن»</div>
+    <div id="cloudStatus" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-ghost" onclick="cloudBackup(true)" data-i18n="btn_cloud_save">☁️ حفظ الآن</button>
+      <button class="btn btn-primary" onclick="cloudRestore()" data-i18n="btn_cloud_restore">⬇️ استرجاع من السحابة</button>
+    </div>
+  </div>
+
   <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="font-size:13px;font-weight:800;color:var(--blue);margin-bottom:8px" data-i18n="backup_import_title">📥 استيراد / استرجاع البيانات</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px" data-i18n="backup_import_desc">الصق النص هنا أو ارفع ملف النسخة الاحتياطية</div>
@@ -810,6 +820,14 @@ ar: {
   toast_downloading:'⬇️ جاري تنزيل الملف...', toast_file_loaded:'📁 تم تحميل الملف — اضغط استرجاع',
   toast_paste_first:'⚠️ الصق البيانات أولاً', toast_invalid_file:'❌ ملف غير صحيح',
   toast_restore_success:'✅ تم استرجاع البيانات بنجاح!', toast_restore_error:'❌ خطأ في قراءة البيانات — تأكد من صحة الملف',
+  backup_cloud_title:'☁️ النسخ الاحتياطي السحابي', backup_cloud_desc:'بيتحفظ تلقائياً كل 24 ساعة أو بزرار «حفظ الآن»',
+  btn_cloud_save:'☁️ حفظ الآن', btn_cloud_restore:'⬇️ استرجاع من السحابة',
+  cloud_last:'آخر نسخة سحابية:', cloud_never:'لسه مفيش نسخة من الجهاز ده', cloud_unavail:'غير متاح — المفتاح الحالي من النظام القديم',
+  toast_cloud_saved:'☁️ تم الحفظ في السحابة', toast_cloud_err:'❌ تعذر الاتصال — تأكد من الإنترنت',
+  toast_cloud_none:'⚠️ مفيش نسخة سحابية لسه', toast_cloud_nokey:'⚠️ متاح لمفاتيح لوحة الإدارة بس',
+  toast_cloud_exists:'☁️ فيه نسخة سحابية — استرجعها من قائمة الحفظ', toast_cloud_big:'⚠️ حجم البيانات كبير على السحابة',
+  confirm_cloud_restore_desc:'استبدال كل البيانات الحالية بنسخة السحابة؟ تاريخ النسخة:',
+  cloud_overwrite_title:'استبدال النسخة السحابية', cloud_overwrite_desc:'فيه نسخة سحابية موجودة. الحفظ دلوقتي هيستبدلها ببيانات الجهاز ده. متأكد؟',
   toast_wiped:'🗑️ تم مسح كل البيانات', prompt_new_car_name:'اسم العربية الجديدة (مثلاً: هيونداي فيرنا)',
   tips_watch_air_filter:'فلتر الهواء', tips_watch_fuel_filter:'فلتر الوقود', tips_watch_ac_filter:'فلتر المكيف',
   tips_watch_timing_belt:'سير التوقيت', tips_watch_fan_belt:'سير المروحة', tips_watch_spark_plugs:'البواجي',
@@ -939,6 +957,14 @@ en: {
   toast_downloading:'⬇️ Downloading file...', toast_file_loaded:'📁 File loaded — tap Restore',
   toast_paste_first:'⚠️ Paste the data first', toast_invalid_file:'❌ Invalid file',
   toast_restore_success:'✅ Data restored successfully!', toast_restore_error:'❌ Error reading data — check the file is valid',
+  backup_cloud_title:'☁️ Cloud Backup', backup_cloud_desc:'Saved automatically every 24 hours, or with the Save now button',
+  btn_cloud_save:'☁️ Save now', btn_cloud_restore:'⬇️ Restore from cloud',
+  cloud_last:'Last cloud backup:', cloud_never:'No backup from this device yet', cloud_unavail:'Unavailable — your key uses the legacy system',
+  toast_cloud_saved:'☁️ Saved to cloud', toast_cloud_err:'❌ Connection failed — check internet',
+  toast_cloud_none:'⚠️ No cloud backup yet', toast_cloud_nokey:'⚠️ Available for admin-panel keys only',
+  toast_cloud_exists:'☁️ A cloud backup exists — restore it from Backup', toast_cloud_big:'⚠️ Data too large for cloud',
+  confirm_cloud_restore_desc:'Replace all current data with the cloud backup? Backup date:',
+  cloud_overwrite_title:'Overwrite cloud backup', cloud_overwrite_desc:'A cloud backup already exists. Saving now will replace it with this device\'s data. Sure?',
   toast_wiped:'🗑️ All data wiped', prompt_new_car_name:'New car name (e.g: Hyundai Verna)',
   tips_watch_air_filter:'Air Filter', tips_watch_fuel_filter:'Fuel Filter', tips_watch_ac_filter:'A/C Filter',
   tips_watch_timing_belt:'Timing Belt', tips_watch_fan_belt:'Fan Belt', tips_watch_spark_plugs:'Spark Plugs',
@@ -1105,6 +1131,7 @@ migrateCars();
 function save(){
   if(D.cars){ const entry=getActiveCarEntry(); if(entry) entry.data.car=D.car; }
   localStorage.setItem('CMD3',JSON.stringify(D));
+  scheduleCloudBackup();
 }
 const v=id=>document.getElementById(id).value.trim();
 const el=id=>document.getElementById(id);
@@ -1900,6 +1927,95 @@ function downloadBackup(){
   showToast(t('toast_downloading'));
 }
 
+// ══ CLOUD BACKUP (Firestore: car_backups/{sha256(activationKey)}) ══
+var _cloudT;
+async function cloudDocId(){
+  const k=localStorage.getItem('cmd3_keyval');
+  return k ? await hashKey('cloud|'+k) : null;
+}
+function hasRealData(){
+  const cars=(D.cars&&D.cars.length)?D.cars:[{data:D}];
+  const arrs=['oil','maintenance','fuel','alerts','settle'];
+  if((D.contacts||[]).length) return true;
+  return cars.some(c=>{const d=c.data||{}; return arrs.some(k=>(d[k]||[]).length)||Object.keys(d.car||{}).length;});
+}
+function cloudBackupDue(){ // النسخ التلقائي: مرة كل 24 ساعة بحد أقصى
+  const DAY=86400000, now=Date.now();
+  return now-(+localStorage.getItem('cmd3_cloud_last')||0)>=DAY && now-(+localStorage.getItem('cmd3_cloud_try')||0)>=DAY;
+}
+function scheduleCloudBackup(){
+  if(!localStorage.getItem('cmd3_keyval') || !cloudBackupDue()) return;
+  clearTimeout(_cloudT);
+  _cloudT=setTimeout(()=>{cloudBackup(false).catch(()=>{});},4000);
+}
+function updateCloudStatus(){
+  const s=el('cloudStatus'); if(!s) return;
+  if(!localStorage.getItem('cmd3_keyval')){ s.textContent=t('cloud_unavail'); return; }
+  const ts=+localStorage.getItem('cmd3_cloud_last');
+  s.textContent = ts ? t('cloud_last')+' '+new Date(ts).toLocaleString(LANG==='en'?'en-GB':'ar-EG') : t('cloud_never');
+}
+async function cloudBackup(manual){
+  const id=await cloudDocId();
+  if(!id){ if(manual) showToast(t('toast_cloud_nokey')); return; }
+  if(!manual && !hasRealData()) return; // بعد المسح الكامل: متكتبش نسخة فاضية فوق القديمة
+  try{
+    const {db,fs}=await getCarFirestore();
+    const ref=fs.doc(db,'car_backups',id);
+    if(localStorage.getItem('cmd3_cloud_synced')!=='1'){
+      const ex=await fs.getDoc(ref);
+      if(ex.exists()){
+        if(manual){
+          showConfirm(t('cloud_overwrite_title'),t('cloud_overwrite_desc'),()=>{
+            localStorage.setItem('cmd3_cloud_synced','1'); cloudBackup(true);
+          });
+        } else {
+          localStorage.setItem('cmd3_cloud_try',String(Date.now()));
+          if(!localStorage.getItem('cmd3_cloud_warned')){
+          localStorage.setItem('cmd3_cloud_warned','1'); showToast(t('toast_cloud_exists'));
+          }
+        }
+        return;
+      }
+    }
+    const json=JSON.stringify(D);
+    if(new TextEncoder().encode(json).length>900000){ if(manual) showToast(t('toast_cloud_big')); return; }
+    await fs.setDoc(ref,{json:json,updated:Date.now(),v:1});
+    localStorage.setItem('cmd3_cloud_synced','1');
+    localStorage.setItem('cmd3_cloud_last',String(Date.now()));
+    updateCloudStatus();
+    if(manual) showToast(t('toast_cloud_saved'));
+  }catch(e){ if(manual) showToast(t('toast_cloud_err')); }
+}
+async function cloudRestore(){
+  const id=await cloudDocId();
+  if(!id){ showToast(t('toast_cloud_nokey')); return; }
+  try{
+    const {db,fs}=await getCarFirestore();
+    const snap=await fs.getDoc(fs.doc(db,'car_backups',id));
+    if(!snap.exists()){ showToast(t('toast_cloud_none')); return; }
+    const data=snap.data();
+    const parsed=JSON.parse(data.json);
+    if(!parsed.car && !parsed.oil){ showToast(t('toast_invalid_file')); return; }
+    const when=new Date(data.updated).toLocaleString(LANG==='en'?'en-GB':'ar-EG');
+    showConfirm(t('confirm_restore_title'),t('confirm_cloud_restore_desc')+' '+when,()=>{
+      D=parsed;
+      if(!D.car) D.car={};
+      if(!D.oil) D.oil=[];
+      if(!D.maintenance) D.maintenance=[];
+      if(!D.contacts) D.contacts=[];
+      if(!D.alerts) D.alerts=[];
+      if(!D.fuel) D.fuel=[];
+      if(!D.settle) D.settle=[];
+      localStorage.setItem('cmd3_cloud_synced','1');
+      localStorage.setItem('cmd3_cloud_last',String(data.updated));
+      migrateCars();
+      save(); renderCarSwitcher(); renderHome(); updateCloudStatus();
+      closeModal('backupModal');
+      showToast(t('toast_restore_success'));
+    });
+  }catch(e){ showToast(t('toast_cloud_err')); }
+}
+
 function loadBackupFile(input){
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
@@ -1969,23 +2085,8 @@ function loadTheme(){
 }
 
 // ══ ACTIVATION ══
-// المفاتيح العشرة القديمة (الموزّعة قبل ربط التطبيق بلوحة الإدارة) — تفضل شغالة كـ fallback محلي
-const VALID_HASHES = [
-  'a0fbb56d3c074b1191fcf4d40a02df861d4437df2b22caf43557f67fd9cb7bb1',
-  '154fc284f72cd9119f1a31cf17b0b9341a6bde24edc5fe24a1a96c8907a768b5',
-  '9cc66a32eb1bb2843475d1264a44de1e82fa73a925f1410b29b604173707ec2e',
-  '5ee7e0aac18bf4b04d80dfff476773022b8f73a89fc0675032ecd0eb453b590c',
-  '4155fce03f071c0ebe37cde8891c2db1419a2557804a4f498ec511e0795ae0ac',
-  '95eaf0ad50b302914661ec38e85ab3f9f8668d0faa4d9a3d9e55f694ddbec5d2',
-  '87573485ed4750e0b0932da3418d7ba58b8f5a577585a9dc96c3721a91531f64',
-  '9967da0933403a5b450f8058e50a6b8f6536226fc14731ccd42267255d1d0a2d',
-  '353640666cc3ebb4364063d9505c6a21f38f2430273e16aa8ca9420ae69d8518',
-  '5a42b622cf26e74936247ccb1a2f54b9c2cd68f7e65329b5c9bb83e266231c47'
-];
-const _S = '\x53\x40\x33\x64';
 const ACT_KEY     = 'cmd3_activated';
 const DEV_KEY      = 'cmd3_device';
-const BIND_KEY      = 'cmd3_binding';  // keyHash => deviceFingerprint (نظام قديم محلي)
 const KEYVAL_KEY    = 'cmd3_keyval';   // المفتاح الفعلي المُستخدم (نظام Firebase الجديد)
 const REMOTE_KEY    = 'cmd3_remote';   // '1' لو التفعيل تم عن طريق لوحة الإدارة (Firestore)
 const LASTCHECK_KEY = 'cmd3_lastcheck';
@@ -2113,23 +2214,8 @@ async function checkActivation(){
     if (result === 'expired')       { showActErr('⏰ انتهت صلاحية هذا المفتاح'); return; }
     if (result === 'other-device')  { showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600); return; }
     if (result === 'exhausted')     { showActErr('⛔ تم استنفاذ عدد مرات استخدام هذا المفتاح', 2600); return; }
-    // 'not-found' أو 'offline' → جرّب النظام القديم (المفاتيح العشرة الثابتة)
-
-    const h = await hashKey(val + _S);
-    if(!VALID_HASHES.includes(h)){
-      showActErr('❌ مفتاح التفعيل غير صحيح');
-      return;
-    }
-    const deviceFP = await getDeviceFingerprint();
-    const bindings = JSON.parse(localStorage.getItem(BIND_KEY)||'{}');
-    if(bindings[h] && bindings[h] !== deviceFP){
-      showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600);
-      return;
-    }
-    bindings[h] = deviceFP;
-    localStorage.setItem(BIND_KEY, JSON.stringify(bindings));
-    localStorage.setItem(DEV_KEY, deviceFP);
-    finishActivation();
+    if (result === 'offline')       { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
+    showActErr('❌ مفتاح التفعيل غير صحيح');
   } finally {
     btn.disabled = false; btn.textContent = oldTxt;
   }
@@ -2180,6 +2266,8 @@ async function periodicRevalidate(){
 
 // INIT
 applyLang();
+updateCloudStatus();
+scheduleCloudBackup();
 renderHome();
 toggleOilFilters('زيت المحرك');
 loadTheme();
