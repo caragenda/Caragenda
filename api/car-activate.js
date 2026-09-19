@@ -1,0 +1,147 @@
+// api/car-activate.js  (Vercel Serverless Function)
+// ─────────────────────────────────────────────────────────────
+// تفعيل مفاتيح تطبيق "أجندة السيارة" (CAR-XXXX-XXXX)
+// المتصفح يبعت POST بـ { key, pin, deviceId, deviceInfo }
+// السيرفر يرجع { success, exp } أو { success:false, code, error }
+// نفس مشروع Firebase ونفس متغيرات البيئة بتاعة activate.js — مفيش أي تغيير على تطبيق الطبي
+// ─────────────────────────────────────────────────────────────
+
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getFirestore }                  = require('firebase-admin/firestore');
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId:   process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey:  process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+const db = getFirestore();
+
+const PROJECT_NAME = 'Car Agenda';
+const DAY = 24 * 60 * 60 * 1000;
+const FOREVER = new Date('2099-01-01').getTime();
+
+const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+const fail = (res, status, code, error) => res.status(status).json({ success: false, code, error });
+
+// مدة الصلاحية (null = دائم)
+function computeExp(data) {
+  if (data.expiry_date && data.expiry_date !== '') {
+    const e = new Date(data.expiry_date).getTime();
+    return Number.isNaN(e) ? null : e;
+  }
+  if (data.duration_days && data.duration_days > 0) {
+    const a = data.activated_at ? new Date(data.activated_at).getTime() : Date.now();
+    return (Number.isNaN(a) ? Date.now() : a) + data.duration_days * DAY;
+  }
+  return null;
+}
+
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return fail(res, 405, 'bad-request', 'Method not allowed');
+
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body || '{}'); }
+    catch { return fail(res, 400, 'bad-request', 'Invalid JSON'); }
+  }
+  body = body || {};
+
+  const cleanKey = clip(body.key, 64).trim().toUpperCase();
+  const pin      = clip(body.pin, 32).trim();
+  const deviceId = clip(body.deviceId, 200).trim();
+  const info     = (body.deviceInfo && typeof body.deviceInfo === 'object') ? body.deviceInfo : {};
+
+  // نسمح بأربع حقول بس من جهاز المستخدم — مفيش حاجة تانية تتكتب في مستند المفتاح
+  const deviceInfo = {
+    device_type: clip(info.device_type, 30),
+    browser:     clip(info.browser, 60),
+    os:          clip(info.os, 60),
+    user_agent:  clip(info.user_agent, 200),
+  };
+
+  if (!cleanKey.startsWith('CAR-') || cleanKey.length < 8) {
+    return fail(res, 401, 'not-found', '❌ مفتاح غير صحيح');
+  }
+  if (!deviceId) return fail(res, 400, 'bad-request', 'Device ID مفقود');
+
+  try {
+    const q = await db.collection('keys').where('key', '==', cleanKey).limit(1).get();
+    if (q.empty) return fail(res, 401, 'not-found', '❌ مفتاح غير صحيح');
+    const docRef = q.docs[0].ref;
+
+    // Transaction عشان جهازين مايفعّلوش نفس المفتاح في نفس اللحظة
+    const out = await db.runTransaction(async (t) => {
+      const snap = await t.get(docRef);
+      if (!snap.exists) return { status: 401, code: 'not-found', error: '❌ مفتاح غير صحيح' };
+      const data = snap.data();
+
+      const isCarKey = data.project ? data.project === PROJECT_NAME : true; // المفتاح CAR- أصلاً
+      if (!isCarKey) return { status: 403, code: 'wrong-project', error: '❌ هذا المفتاح غير خاص بهذا التطبيق' };
+
+      if (String(data.pin_code || '') !== pin) {
+        return { status: 401, code: 'invalid', error: '❌ المفتاح أو الرقم السري غير صحيح' };
+      }
+      if (data.status === 'revoked' || data.status === 'disabled') {
+        return { status: 403, code: 'revoked', error: '⛔ تم إلغاء هذا المفتاح' };
+      }
+
+      const exp = computeExp(data);
+      if (exp !== null && exp < Date.now()) {
+        return { status: 403, code: 'expired', error: '⏰ انتهت صلاحية هذا المفتاح' };
+      }
+
+      const nowIso  = new Date().toISOString();
+      const maxUses = Number(data.max_uses) || 0;
+
+      if (maxUses === 0) {
+        // جهاز واحد
+        if (data.device_id && data.device_id !== deviceId) {
+          return { status: 403, code: 'other-device', error: '⛔ هذا المفتاح مفعّل على جهاز آخر' };
+        }
+        if (!data.device_id) {
+          t.update(docRef, {
+            device_id: deviceId, activated_at: nowIso, status: 'used', use_count: 1, ...deviceInfo,
+          });
+        }
+      } else {
+        // أجهزة متعددة
+        const devices = Array.isArray(data.devices) ? data.devices : [];
+        const idx = devices.findIndex(d => d && d.id === deviceId);
+        if (idx >= 0) {
+          const updated = devices.map((d, i) => i === idx ? { ...d, activated_at: nowIso, ...deviceInfo } : d);
+          t.update(docRef, { devices: updated });
+        } else {
+          if (devices.length >= maxUses) {
+            return { status: 403, code: 'exhausted', error: `⛔ وصل المفتاح للحد الأقصى (${maxUses} أجهزة)` };
+          }
+          const updated = [...devices, { id: deviceId, activated_at: nowIso, ...deviceInfo }];
+          t.update(docRef, {
+            devices: updated,
+            use_count: updated.length,
+            activated_at: data.activated_at || nowIso,
+            status: updated.length >= maxUses ? 'used' : 'active',
+          });
+        }
+      }
+
+      return { ok: true, exp: exp || FOREVER };
+    });
+
+    if (!out.ok) return fail(res, out.status, out.code, out.error);
+    return res.status(200).json({ success: true, exp: out.exp });
+
+  } catch (err) {
+    console.error('car-activate error:', err);
+    return fail(res, 500, 'server', '⚠️ خطأ في الخادم — حاول مجدداً');
+  }
+};
