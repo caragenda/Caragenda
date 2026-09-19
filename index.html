@@ -2004,7 +2004,7 @@ async function cloudLinkKey(){
   try{
     const r=await tryRemoteActivation(val,pin);
     const dg=el('cloudDiag'); if(dg) dg.textContent = r==='ok' ? '' : ((window._carApiLast||'') + ' → ' + r + (window._carApiErr ? ' | ' + window._carApiErr : ''));
-    const msgs={offline:'📡 تعذر الاتصال بالسيرفر',server:'⚠️ خطأ في السيرفر — حاول تاني','not-found':'❌ المفتاح غير موجود',invalid:'❌ المفتاح أو الـ PIN غير صحيح','wrong-project':'❌ المفتاح مش خاص بالتطبيق',revoked:'⛔ المفتاح ملغي',expired:'⏰ المفتاح منتهي','other-device':'⛔ المفتاح على جهاز آخر',exhausted:'⛔ المفتاح استنفذ عدد مرات الاستخدام'};
+    const msgs={offline:'📡 تعذر الاتصال بالسيرفر',server:'⚠️ خطأ في السيرفر — حاول تاني',config:'⚙️ إعداد السيرفر ناقص','not-found':'❌ المفتاح غير موجود',invalid:'❌ المفتاح أو الـ PIN غير صحيح','wrong-project':'❌ المفتاح مش خاص بالتطبيق',revoked:'⛔ المفتاح ملغي',expired:'⏰ المفتاح منتهي','other-device':'⛔ المفتاح على جهاز آخر',exhausted:'⛔ المفتاح استنفذ عدد مرات الاستخدام'};
     if(r==='ok'){ el('cloudKeyIn').value=''; el('cloudPinIn').value=''; updateCloudStatus(); showToast(t('toast_cloud_linked')); scheduleCloudBackup(); }
     else showToast(msgs[r] || (String(r).startsWith('http-') ? '⚠️ السيرفر مش لاقي الخدمة (' + String(r).slice(5) + ')' : '❌ خطأ'));
   } finally { btn.disabled=false; }
@@ -2211,7 +2211,7 @@ async function tryRemoteActivation(val, pin){
     });
   } catch(e) { console.error('car-activate:', e); window._carApiErr = (e && e.name ? e.name : 'Error') + ': ' + (e && e.message); return (e && e.status) ? 'http-' + e.status : 'offline'; }
 
-  if (!r || !r.success) return (r && r.code) || 'offline';
+  if (!r || !r.success) { if (r && r.error) window._carApiErr = r.error; return (r && r.code) || 'offline'; }
 
   localStorage.setItem(DEV_KEY, deviceFP);
   localStorage.setItem(KEYVAL_KEY, val);
@@ -2237,7 +2237,7 @@ async function checkActivation(){
     if (result === 'other-device')  { showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600); return; }
     if (result === 'exhausted')     { showActErr('⛔ تم استنفاذ عدد مرات استخدام هذا المفتاح', 2600); return; }
     if (String(result).startsWith('http-')) { showActErr('⚠️ السيرفر مش لاقي الخدمة (' + String(result).slice(5) + ')', 3200); return; }
-    if (result === 'offline' || result === 'server') { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
+    if (result === 'offline' || result === 'server' || result === 'config') { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
     showActErr('❌ مفتاح التفعيل غير صحيح');
   } finally {
     btn.disabled = false; btn.textContent = oldTxt;
