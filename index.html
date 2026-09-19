@@ -672,6 +672,7 @@ textarea{resize:vertical;min-height:65px}
       <input id="cloudKeyIn" placeholder="CAR-XXXX-XXXX" style="width:100%;margin-bottom:6px;font-size:13px;direction:ltr;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);outline:none">
       <input id="cloudPinIn" placeholder="PIN" style="width:100%;margin-bottom:6px;font-size:13px;direction:ltr;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);outline:none">
       <button id="cloudLinkBtn" class="btn btn-primary btn-block" onclick="cloudLinkKey()" data-i18n="btn_cloud_link">🔑 ربط المفتاح</button>
+      <div id="cloudDiag" style="font-size:10px;color:var(--muted);direction:ltr;text-align:left;word-break:break-all;margin-top:6px"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-ghost" onclick="cloudBackup(true)" data-i18n="btn_cloud_save">☁️ حفظ الآن</button>
@@ -2002,9 +2003,10 @@ async function cloudLinkKey(){
   const btn=el('cloudLinkBtn'); btn.disabled=true;
   try{
     const r=await tryRemoteActivation(val,pin);
+    const dg=el('cloudDiag'); if(dg) dg.textContent = r==='ok' ? '' : ((window._carApiLast||'') + ' → ' + r + (window._carApiErr ? ' | ' + window._carApiErr : ''));
     const msgs={offline:'📡 تعذر الاتصال بالسيرفر',server:'⚠️ خطأ في السيرفر — حاول تاني','not-found':'❌ المفتاح غير موجود',invalid:'❌ المفتاح أو الـ PIN غير صحيح','wrong-project':'❌ المفتاح مش خاص بالتطبيق',revoked:'⛔ المفتاح ملغي',expired:'⏰ المفتاح منتهي','other-device':'⛔ المفتاح على جهاز آخر',exhausted:'⛔ المفتاح استنفذ عدد مرات الاستخدام'};
     if(r==='ok'){ el('cloudKeyIn').value=''; el('cloudPinIn').value=''; updateCloudStatus(); showToast(t('toast_cloud_linked')); scheduleCloudBackup(); }
-    else showToast(msgs[r]||'❌ خطأ');
+    else showToast(msgs[r] || (String(r).startsWith('http-') ? '⚠️ السيرفر مش لاقي الخدمة (' + String(r).slice(5) + ')' : '❌ خطأ'));
   } finally { btn.disabled=false; }
 }
 async function cloudRestore(){
@@ -2113,17 +2115,23 @@ const REMOTE_KEY    = 'cmd3_remote';   // '1' لو التفعيل تم عن طر
 const LASTCHECK_KEY = 'cmd3_lastcheck';
 
 // السيرفر (Vercel) اللي فيه api/car-activate و api/car-verify — التفعيل بيتم من خلاله بدل قراءة Firestore مباشرة
-// سيبه '' لو التطبيق منشور على نفس دومين الـ API، أو حط الدومين كامل مثل: 'https://your-project.vercel.app'
+// مشروع السيارة على Vercel بيستضيف api/car-activate و api/car-verify بنفسه — سيب '' (نفس الدومين)
+// لو التطبيق بيتفتح من دومين تاني (مثلاً جوه APK) حط دومين مشروع السيارة كامل: 'https://اسم-المشروع.vercel.app'
 const CAR_API_BASE = '';
 async function carApi(name, payload){
   const ctl = new AbortController();
   const timer = setTimeout(()=>ctl.abort(), 15000);
+  const url = CAR_API_BASE + '/api/' + name;
+  try { window._carApiLast = new URL(url, location.href).href; } catch(e) { window._carApiLast = url; }
   try {
-    const res = await fetch(CAR_API_BASE + '/api/' + name, {
+    const res = await fetch(url, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload), signal: ctl.signal
     });
-    return await res.json();
+    let data = null;
+    try { data = await res.json(); } catch(e) {}
+    if (data === null) { const err = new Error('HTTP ' + res.status); err.status = res.status; throw err; }
+    return data;
   } finally { clearTimeout(timer); }
 }
 
@@ -2191,6 +2199,7 @@ async function tryRemoteActivation(val, pin){
   const deviceFP = await getDeviceFingerprint();
   const ua = navigator.userAgent || '';
   let r;
+  window._carApiErr = '';
   try {
     r = await carApi('car-activate', {
       key: val, pin: pin || '', deviceId: deviceFP,
@@ -2200,7 +2209,7 @@ async function tryRemoteActivation(val, pin){
         user_agent: ua.substring(0,200)
       }
     });
-  } catch(e) { console.error('car-activate:', e); return 'offline'; }
+  } catch(e) { console.error('car-activate:', e); window._carApiErr = (e && e.name ? e.name : 'Error') + ': ' + (e && e.message); return (e && e.status) ? 'http-' + e.status : 'offline'; }
 
   if (!r || !r.success) return (r && r.code) || 'offline';
 
@@ -2227,6 +2236,7 @@ async function checkActivation(){
     if (result === 'expired')       { showActErr('⏰ انتهت صلاحية هذا المفتاح'); return; }
     if (result === 'other-device')  { showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600); return; }
     if (result === 'exhausted')     { showActErr('⛔ تم استنفاذ عدد مرات استخدام هذا المفتاح', 2600); return; }
+    if (String(result).startsWith('http-')) { showActErr('⚠️ السيرفر مش لاقي الخدمة (' + String(result).slice(5) + ')', 3200); return; }
     if (result === 'offline' || result === 'server') { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
     showActErr('❌ مفتاح التفعيل غير صحيح');
   } finally {
