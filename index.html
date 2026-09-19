@@ -667,6 +667,12 @@ textarea{resize:vertical;min-height:65px}
     <div style="font-size:13px;font-weight:800;color:#0ea5e9;margin-bottom:8px" data-i18n="backup_cloud_title">☁️ النسخ الاحتياطي السحابي</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px" data-i18n="backup_cloud_desc">بيتحفظ تلقائياً كل 24 ساعة أو بزرار «حفظ الآن»</div>
     <div id="cloudStatus" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+    <div id="cloudLink" style="display:none;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px" data-i18n="cloud_link_desc">اربط الجهاز بمفتاح من لوحة الإدارة عشان النسخ السحابي يشتغل</div>
+      <input id="cloudKeyIn" placeholder="CAR-XXXX-XXXX" style="width:100%;margin-bottom:6px;font-size:13px;direction:ltr;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);outline:none">
+      <input id="cloudPinIn" placeholder="PIN" style="width:100%;margin-bottom:6px;font-size:13px;direction:ltr;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);outline:none">
+      <button id="cloudLinkBtn" class="btn btn-primary btn-block" onclick="cloudLinkKey()" data-i18n="btn_cloud_link">🔑 ربط المفتاح</button>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-ghost" onclick="cloudBackup(true)" data-i18n="btn_cloud_save">☁️ حفظ الآن</button>
       <button class="btn btn-primary" onclick="cloudRestore()" data-i18n="btn_cloud_restore">⬇️ استرجاع من السحابة</button>
@@ -822,11 +828,12 @@ ar: {
   toast_restore_success:'✅ تم استرجاع البيانات بنجاح!', toast_restore_error:'❌ خطأ في قراءة البيانات — تأكد من صحة الملف',
   backup_cloud_title:'☁️ النسخ الاحتياطي السحابي', backup_cloud_desc:'بيتحفظ تلقائياً كل 24 ساعة أو بزرار «حفظ الآن»',
   btn_cloud_save:'☁️ حفظ الآن', btn_cloud_restore:'⬇️ استرجاع من السحابة',
-  cloud_last:'آخر نسخة سحابية:', cloud_never:'لسه مفيش نسخة من الجهاز ده', cloud_unavail:'غير متاح — المفتاح الحالي من النظام القديم',
+  cloud_last:'آخر نسخة سحابية:', cloud_never:'لسه مفيش نسخة من الجهاز ده', cloud_unavail:'غير متاح — الجهاز مش مربوط بمفتاح من لوحة الإدارة',
   toast_cloud_saved:'☁️ تم الحفظ في السحابة', toast_cloud_err:'❌ تعذر الاتصال — تأكد من الإنترنت',
-  toast_cloud_none:'⚠️ مفيش نسخة سحابية لسه', toast_cloud_nokey:'⚠️ متاح لمفاتيح لوحة الإدارة بس',
+  toast_cloud_none:'⚠️ مفيش نسخة سحابية لسه', toast_cloud_nokey:'⚠️ اربط مفتاح لوحة الإدارة الأول',
   toast_cloud_exists:'☁️ فيه نسخة سحابية — استرجعها من قائمة الحفظ', toast_cloud_big:'⚠️ حجم البيانات كبير على السحابة',
   confirm_cloud_restore_desc:'استبدال كل البيانات الحالية بنسخة السحابة؟ تاريخ النسخة:',
+  cloud_link_desc:'اربط الجهاز بمفتاح من لوحة الإدارة عشان النسخ السحابي يشتغل', btn_cloud_link:'🔑 ربط المفتاح', toast_cloud_linked:'✅ تم الربط بالمفتاح',
   cloud_overwrite_title:'استبدال النسخة السحابية', cloud_overwrite_desc:'فيه نسخة سحابية موجودة. الحفظ دلوقتي هيستبدلها ببيانات الجهاز ده. متأكد؟',
   toast_wiped:'🗑️ تم مسح كل البيانات', prompt_new_car_name:'اسم العربية الجديدة (مثلاً: هيونداي فيرنا)',
   tips_watch_air_filter:'فلتر الهواء', tips_watch_fuel_filter:'فلتر الوقود', tips_watch_ac_filter:'فلتر المكيف',
@@ -959,11 +966,12 @@ en: {
   toast_restore_success:'✅ Data restored successfully!', toast_restore_error:'❌ Error reading data — check the file is valid',
   backup_cloud_title:'☁️ Cloud Backup', backup_cloud_desc:'Saved automatically every 24 hours, or with the Save now button',
   btn_cloud_save:'☁️ Save now', btn_cloud_restore:'⬇️ Restore from cloud',
-  cloud_last:'Last cloud backup:', cloud_never:'No backup from this device yet', cloud_unavail:'Unavailable — your key uses the legacy system',
+  cloud_last:'Last cloud backup:', cloud_never:'No backup from this device yet', cloud_unavail:'Unavailable — this device is not linked to an admin-panel key',
   toast_cloud_saved:'☁️ Saved to cloud', toast_cloud_err:'❌ Connection failed — check internet',
-  toast_cloud_none:'⚠️ No cloud backup yet', toast_cloud_nokey:'⚠️ Available for admin-panel keys only',
+  toast_cloud_none:'⚠️ No cloud backup yet', toast_cloud_nokey:'⚠️ Link an admin-panel key first',
   toast_cloud_exists:'☁️ A cloud backup exists — restore it from Backup', toast_cloud_big:'⚠️ Data too large for cloud',
   confirm_cloud_restore_desc:'Replace all current data with the cloud backup? Backup date:',
+  cloud_link_desc:'Link this device to an admin-panel key to enable cloud backup', btn_cloud_link:'🔑 Link key', toast_cloud_linked:'✅ Key linked',
   cloud_overwrite_title:'Overwrite cloud backup', cloud_overwrite_desc:'A cloud backup already exists. Saving now will replace it with this device\'s data. Sure?',
   toast_wiped:'🗑️ All data wiped', prompt_new_car_name:'New car name (e.g: Hyundai Verna)',
   tips_watch_air_filter:'Air Filter', tips_watch_fuel_filter:'Fuel Filter', tips_watch_ac_filter:'A/C Filter',
@@ -1950,7 +1958,9 @@ function scheduleCloudBackup(){
 }
 function updateCloudStatus(){
   const s=el('cloudStatus'); if(!s) return;
-  if(!localStorage.getItem('cmd3_keyval')){ s.textContent=t('cloud_unavail'); return; }
+  const lk=el('cloudLink');
+  if(!localStorage.getItem('cmd3_keyval')){ s.textContent=t('cloud_unavail'); if(lk) lk.style.display='block'; return; }
+  if(lk) lk.style.display='none';
   const ts=+localStorage.getItem('cmd3_cloud_last');
   s.textContent = ts ? t('cloud_last')+' '+new Date(ts).toLocaleString(LANG==='en'?'en-GB':'ar-EG') : t('cloud_never');
 }
@@ -1959,7 +1969,7 @@ async function cloudBackup(manual){
   if(!id){ if(manual) showToast(t('toast_cloud_nokey')); return; }
   if(!manual && !hasRealData()) return; // بعد المسح الكامل: متكتبش نسخة فاضية فوق القديمة
   try{
-    const {db,fs}=await getCarFirestore();
+    const {db,fs}=await getBackupFirestore();
     const ref=fs.doc(db,'car_backups',id);
     if(localStorage.getItem('cmd3_cloud_synced')!=='1'){
       const ex=await fs.getDoc(ref);
@@ -1986,11 +1996,22 @@ async function cloudBackup(manual){
     if(manual) showToast(t('toast_cloud_saved'));
   }catch(e){ if(manual) showToast(t('toast_cloud_err')); }
 }
+async function cloudLinkKey(){
+  const val=el('cloudKeyIn').value.trim().toUpperCase(), pin=el('cloudPinIn').value.trim();
+  if(!val){ showToast('⚠️ أدخل مفتاح التفعيل'); return; }
+  const btn=el('cloudLinkBtn'); btn.disabled=true;
+  try{
+    const r=await tryRemoteActivation(val,pin);
+    const msgs={offline:'📡 تعذر الاتصال بالسيرفر',server:'⚠️ خطأ في السيرفر — حاول تاني','not-found':'❌ المفتاح غير موجود',invalid:'❌ المفتاح أو الـ PIN غير صحيح','wrong-project':'❌ المفتاح مش خاص بالتطبيق',revoked:'⛔ المفتاح ملغي',expired:'⏰ المفتاح منتهي','other-device':'⛔ المفتاح على جهاز آخر',exhausted:'⛔ المفتاح استنفذ عدد مرات الاستخدام'};
+    if(r==='ok'){ el('cloudKeyIn').value=''; el('cloudPinIn').value=''; updateCloudStatus(); showToast(t('toast_cloud_linked')); scheduleCloudBackup(); }
+    else showToast(msgs[r]||'❌ خطأ');
+  } finally { btn.disabled=false; }
+}
 async function cloudRestore(){
   const id=await cloudDocId();
   if(!id){ showToast(t('toast_cloud_nokey')); return; }
   try{
-    const {db,fs}=await getCarFirestore();
+    const {db,fs}=await getBackupFirestore();
     const snap=await fs.getDoc(fs.doc(db,'car_backups',id));
     if(!snap.exists()){ showToast(t('toast_cloud_none')); return; }
     const data=snap.data();
@@ -2091,23 +2112,38 @@ const KEYVAL_KEY    = 'cmd3_keyval';   // المفتاح الفعلي المُس
 const REMOTE_KEY    = 'cmd3_remote';   // '1' لو التفعيل تم عن طريق لوحة الإدارة (Firestore)
 const LASTCHECK_KEY = 'cmd3_lastcheck';
 
-// نفس مشروع Firebase بتاع لوحة إدارة المفاتيح
-const CAR_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBOt9N8XJrdC921gVKZ4pWjfYA5DQlmC50",
-  authDomain: "medical-refrence.firebaseapp.com",
-  projectId: "medical-refrence",
-  storageBucket: "medical-refrence.firebasestorage.app",
-  messagingSenderId: "729432807899",
-  appId: "1:729432807899:web:fa3dcb8c81534faa35affe"
+// السيرفر (Vercel) اللي فيه api/car-activate و api/car-verify — التفعيل بيتم من خلاله بدل قراءة Firestore مباشرة
+// سيبه '' لو التطبيق منشور على نفس دومين الـ API، أو حط الدومين كامل مثل: 'https://your-project.vercel.app'
+const CAR_API_BASE = '';
+async function carApi(name, payload){
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), 15000);
+  try {
+    const res = await fetch(CAR_API_BASE + '/api/' + name, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload), signal: ctl.signal
+    });
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+
+// مشروع Firebase منفصل للنسخ الاحتياطي (car_backups) — مشروع car-agenda
+const CAR_BACKUP_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBvfgaP2JU4ns__h4XcS-3lw99GpsRL6Bs",
+  authDomain: "car-agenda.firebaseapp.com",
+  projectId: "car-agenda",
+  storageBucket: "car-agenda.firebasestorage.app",
+  messagingSenderId: "851839077491",
+  appId: "1:851839077491:web:e13f0bed95a9fbdc1bee06"
 };
-let _carFsCache = null;
-async function getCarFirestore(){
-  if (_carFsCache) return _carFsCache;
+var _carBkCache = null;
+async function getBackupFirestore(){
+  if (_carBkCache) return _carBkCache;
   const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
   const fs = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-  const app = initializeApp(CAR_FIREBASE_CONFIG);
-  _carFsCache = { db: fs.getFirestore(app), fs };
-  return _carFsCache;
+  const app = initializeApp(CAR_BACKUP_FIREBASE_CONFIG, 'carBackup');
+  _carBkCache = { db: fs.getFirestore(app), fs };
+  return _carBkCache;
 }
 
 async function hashKey(str){
@@ -2149,47 +2185,24 @@ function showActErr(msg, ms){
   setTimeout(()=>{ inp.style.borderColor=''; err.textContent=''; }, ms||2200);
 }
 
-// يحاول التحقق من المفتاح عن طريق لوحة إدارة المفاتيح (Firestore)
-// يرجع: 'ok' | 'not-found' | 'invalid' | 'wrong-project' | 'revoked' | 'expired' | 'other-device' | 'exhausted' | 'offline'
+// يتحقق من المفتاح عن طريق السيرفر (api/car-activate) اللي بيقرأ من لوحة إدارة المفاتيح
+// يرجع: 'ok' | 'not-found' | 'invalid' | 'wrong-project' | 'revoked' | 'expired' | 'other-device' | 'exhausted' | 'server' | 'offline'
 async function tryRemoteActivation(val, pin){
-  let db, fsMod;
-  try {
-    const r = await getCarFirestore();
-    db = r.db; fsMod = r.fs;
-  } catch(e) { return 'offline'; }
-
-  const { collection, query, where, getDocs, doc, updateDoc, increment } = fsMod;
-  let snap;
-  try {
-    snap = await getDocs(query(collection(db,'keys'), where('key','==', val)));
-  } catch(e) { return 'offline'; }
-
-  if (snap.empty) return 'not-found';
-  const docSnap = snap.docs[0];
-  const k = docSnap.data();
-
-  const isCarProject = k.project ? k.project === 'Car Agenda' : val.startsWith('CAR-');
-  if (!isCarProject) return 'wrong-project';
-  if (String(k.pin_code||'') !== pin) return 'invalid';
-  if (k.status === 'revoked') return 'revoked';
-  if (k.expiry_date && new Date(k.expiry_date) < new Date()) return 'expired';
-
   const deviceFP = await getDeviceFingerprint();
-  if (k.device_id && k.device_id !== deviceFP) return 'other-device';
-  if (k.max_uses > 0 && (k.use_count||0) >= k.max_uses && k.device_id !== deviceFP) return 'exhausted';
+  const ua = navigator.userAgent || '';
+  let r;
+  try {
+    r = await carApi('car-activate', {
+      key: val, pin: pin || '', deviceId: deviceFP,
+      deviceInfo: {
+        device_type: 'Mobile', browser: 'Car Agenda App',
+        os: /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iOS' : 'Other',
+        user_agent: ua.substring(0,200)
+      }
+    });
+  } catch(e) { console.error('car-activate:', e); return 'offline'; }
 
-  if (!k.device_id) {
-    try {
-      await updateDoc(doc(db,'keys', docSnap.id), {
-        status: 'used',
-        device_id: deviceFP,
-        activated_at: new Date().toISOString(),
-        use_count: increment(1),
-        device_type: 'Mobile',
-        browser: 'Car Agenda App'
-      });
-    } catch(e) { /* حتى لو الكتابة فشلت (صلاحيات مثلاً) خلي التفعيل يعدي محليًا */ }
-  }
+  if (!r || !r.success) return (r && r.code) || 'offline';
 
   localStorage.setItem(DEV_KEY, deviceFP);
   localStorage.setItem(KEYVAL_KEY, val);
@@ -2214,7 +2227,7 @@ async function checkActivation(){
     if (result === 'expired')       { showActErr('⏰ انتهت صلاحية هذا المفتاح'); return; }
     if (result === 'other-device')  { showActErr('⛔ هذا المفتاح مفعّل على جهاز آخر', 2600); return; }
     if (result === 'exhausted')     { showActErr('⛔ تم استنفاذ عدد مرات استخدام هذا المفتاح', 2600); return; }
-    if (result === 'offline')       { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
+    if (result === 'offline' || result === 'server') { showActErr('📡 تعذر الاتصال — تأكد من الإنترنت', 2600); return; }
     showActErr('❌ مفتاح التفعيل غير صحيح');
   } finally {
     btn.disabled = false; btn.textContent = oldTxt;
@@ -2245,14 +2258,8 @@ async function periodicRevalidate(){
   const val = localStorage.getItem(KEYVAL_KEY);
   if(!val) return;
   try {
-    const { db, fs } = await getCarFirestore();
-    const { collection, query, where, getDocs } = fs;
-    const snap = await getDocs(query(collection(db,'keys'), where('key','==', val)));
-    if(snap.empty) return;
-    const k = snap.docs[0].data();
-    const revoked = k.status === 'revoked';
-    const expired = k.expiry_date && new Date(k.expiry_date) < new Date();
-    if(revoked || expired){
+    const r = await carApi('car-verify', { key: val, deviceId: await getDeviceFingerprint() });
+    if(r && r.valid === false){
       localStorage.removeItem(ACT_KEY);
       localStorage.removeItem(DEV_KEY);
       localStorage.removeItem(REMOTE_KEY);
@@ -2260,7 +2267,7 @@ async function periodicRevalidate(){
       location.reload();
       return;
     }
-    localStorage.setItem(LASTCHECK_KEY, today);
+    if(r && r.valid === true) localStorage.setItem(LASTCHECK_KEY, today);
   } catch(e) { /* أوفلاين — تجاهل ونكمل عادي */ }
 }
 
