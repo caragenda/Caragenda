@@ -1,4 +1,4 @@
-const CACHE = 'car-agenda-v2';
+const CACHE = 'car-agenda-v3';
 const ASSETS = ['/'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,18 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // The manifest must always be fresh (icons / install info) - network first.
+  if (e.request.destination === 'manifest' || new URL(e.request.url).pathname === '/manifest.json') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   // Network-first for navigations/HTML so new deploys show up immediately.
   if (e.request.mode === 'navigate' || e.request.destination === 'document') {
     e.respondWith(
