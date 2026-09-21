@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="أجندة السيارة">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>أجندة السيارة</title>
 <style>
 /* Cairo font - system Arabic fallback for offline use */
@@ -782,7 +789,7 @@ ar: {
   backup_pdf_title:'🖨️ تصدير تقرير PDF', backup_pdf_desc:'تقرير مطبوع بكل سجلات العربية الحالية (زيوت، صيانة، بنزين) — هيفتح نافذة طباعة، اختر "حفظ كـ PDF"',
   btn_export_pdf:'📄 تصدير تقرير العربية الحالية',
   backup_wipe_title:'⚠️ مسح كل البيانات', backup_wipe_desc:'احذف كل البيانات وابدأ من الأول', btn_wipe:'🗑️ مسح كل البيانات',
-  act_title:'أجندة السيارة', act_sub:'أدخل مفتاح التفعيل للمتابعة', act_pin_ph:'الرقم السري (PIN) — إن وُجد',
+  act_title:'أجندة السيارة', act_sub:'أدخل مفتاح التفعيل للمتابعة', act_pin_ph:'الرقم السري (PIN) — إن وُجد', act_contact_title:'للحصول على مفتاح التفعيل أو للاستفسار تواصل معنا:', act_mail_btn:'✉️ إرسال إيميل', act_copy_btn:'📋 نسخ الإيميل', act_copied:'✅ تم النسخ',
   ib_title:'ثبّت أجندة السيارة', ib_sub:'أضفها للشاشة الرئيسية للوصول السريع',
   unit_km:'كم', unit_l:'ل', unit_egp:'ج', unit_egp_l:'ج/ل',
   ib_odometer:'العداد',
@@ -920,7 +927,7 @@ en: {
   backup_pdf_title:'🖨️ Export PDF Report', backup_pdf_desc:'A printed report of all current car records (oil, maintenance, fuel) — opens a print window, choose "Save as PDF"',
   btn_export_pdf:'📄 Export Current Car Report',
   backup_wipe_title:'⚠️ Wipe All Data', backup_wipe_desc:'Delete all data and start fresh', btn_wipe:'🗑️ Wipe All Data',
-  act_title:'Car Agenda', act_sub:'Enter your activation key to continue', act_pin_ph:'PIN — if any',
+  act_title:'Car Agenda', act_sub:'Enter your activation key to continue', act_pin_ph:'PIN — if any', act_contact_title:'To get an activation key or for support, contact us:', act_mail_btn:'✉️ Send email', act_copy_btn:'📋 Copy email', act_copied:'✅ Copied',
   ib_title:'Install Car Agenda', ib_sub:'Add it to your home screen for quick access',
   unit_km:'km', unit_l:'L', unit_egp:'EGP', unit_egp_l:'EGP/L',
   ib_odometer:'Odometer',
@@ -2219,6 +2226,20 @@ async function tryRemoteActivation(val, pin){
   return 'ok';
 }
 
+function copyActEmail(){
+  const mail = (document.getElementById('actMail').textContent || '').trim();
+  const btn = document.getElementById('actCopyBtn');
+  const done = () => { btn.textContent = t('act_copied'); setTimeout(() => { btn.textContent = t('act_copy_btn'); }, 1800); };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = mail; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta); done();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(mail).then(done).catch(fallback);
+  else fallback();
+}
 async function checkActivation(){
   const val = document.getElementById('actInput').value.trim().toUpperCase();
   const pin = document.getElementById('actPin').value.trim();
@@ -2307,10 +2328,10 @@ document.addEventListener('DOMContentLoaded', function(){
 #activationScreen{
   display:none;position:fixed;inset:0;
   background:linear-gradient(135deg,#0d1117,#1a0800 60%,#0d1117);
-  z-index:9999;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;
   padding:30px 20px;font-family:Cairo,sans-serif;
 }
-#activationScreen .act-logo{font-size:56px;margin-bottom:12px;animation:actPulse 2s infinite}
+#activationScreen .act-logo{font-size:56px;margin-top:auto;margin-bottom:12px;animation:actPulse 2s infinite}
 @keyframes actPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 #activationScreen .act-title{font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;text-align:center}
 #activationScreen .act-sub{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:28px;text-align:center}
@@ -2329,6 +2350,12 @@ document.addEventListener('DOMContentLoaded', function(){
 }
 #activationScreen .act-btn:hover{opacity:.88}
 #activationScreen .act-err{text-align:center;font-size:13px;color:#ef4444;min-height:20px;font-weight:600}
+.act-contact{width:100%;max-width:340px;margin-top:22px;margin-bottom:auto;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);text-align:center;box-sizing:border-box}
+.act-contact-title{font-size:12.5px;color:rgba(255,255,255,.62);line-height:1.8;margin-bottom:6px}
+.act-contact-mail{display:block;direction:ltr;font-size:14.5px;font-weight:800;color:var(--accent);letter-spacing:.3px;word-break:break-all;user-select:all;-webkit-user-select:all}
+.act-contact-actions{display:flex;gap:8px;margin-top:12px}
+.act-contact-actions a,.act-contact-actions button{flex:1;padding:10px 6px;border-radius:10px;font-size:12.5px;font-weight:700;font-family:Cairo,sans-serif;cursor:pointer;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;text-decoration:none;text-align:center;box-sizing:border-box}
+.act-contact-actions .mail-btn{background:var(--accent);border-color:var(--accent);color:#1a0d00}
 </style>
 <div id="activationScreen">
   <div class="act-logo">🔐</div>
@@ -2341,6 +2368,14 @@ document.addEventListener('DOMContentLoaded', function(){
       onkeydown="if(event.key==='Enter') checkActivation()">
     <button class="act-btn" id="actBtn" onclick="checkActivation()" data-i18n="btn_activate">🔓 تفعيل</button>
     <div class="act-err" id="actErr"></div>
+  </div>
+  <div class="act-contact">
+    <div class="act-contact-title" data-i18n="act_contact_title">للحصول على مفتاح التفعيل أو للاستفسار تواصل معنا:</div>
+    <div class="act-contact-mail" id="actMail">saadabdo002@gmail.com</div>
+    <div class="act-contact-actions">
+      <a class="mail-btn" href="mailto:saadabdo002@gmail.com?subject=%D8%B7%D9%84%D8%A8%20%D9%85%D9%81%D8%AA%D8%A7%D8%AD%20%D8%AA%D9%81%D8%B9%D9%8A%D9%84%20-%20%D8%A3%D8%AC%D9%86%D8%AF%D8%A9%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B1%D8%A9%20%28Car%20Agenda%29&body=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C%0A%D8%B9%D8%A7%D9%8A%D8%B2%20%D9%85%D9%81%D8%AA%D8%A7%D8%AD%20%D8%AA%D9%81%D8%B9%D9%8A%D9%84%20%D9%84%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%20%D8%A3%D8%AC%D9%86%D8%AF%D8%A9%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B1%D8%A9." data-i18n="act_mail_btn">✉️ إرسال إيميل</a>
+      <button type="button" id="actCopyBtn" onclick="copyActEmail()" data-i18n="act_copy_btn">📋 نسخ الإيميل</button>
+    </div>
   </div>
 </div>
 
