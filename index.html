@@ -382,6 +382,7 @@ textarea{resize:vertical;min-height:65px}
 <div id="page-alerts" class="page">
   <div class="sec-hdr"><h2 data-i18n="page_alerts">🔔 التنبيهات</h2><button class="btn btn-primary btn-sm" onclick="openAlertModal()" data-i18n="btn_add">+ إضافة</button></div>
   <button class="btn btn-primary btn-block" id="notifToggleBtn" style="margin-bottom:10px" onclick="toggleNotifications()">🔕 تفعيل تنبيهات الأجهزة</button>
+  <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="openAlertCfg()" data-i18n="alert_cfg_btn">⚙️ إعدادات ظهور التنبيهات</button>
   <div id="alertsList"></div>
 </div>
 
@@ -583,6 +584,16 @@ textarea{resize:vertical;min-height:65px}
 </div></div>
 
 <!-- SETTLE -->
+<div class="modal-overlay" id="alertCfgModal"><div class="modal">
+  <div class="modal-drag"></div><h3 data-i18n="alert_cfg_title">⚙️ متى تظهر التنبيهات؟</h3>
+  <div class="form-grid">
+    <div class="fg"><label data-i18n="alert_cfg_km">قبل الموعد بـ (كم)</label><input id="acfg_km" type="number" inputmode="numeric" min="0" placeholder="500"></div>
+    <div class="fg"><label data-i18n="alert_cfg_days">قبل الموعد بـ (يوم)</label><input id="acfg_days" type="number" inputmode="numeric" min="0" placeholder="7"></div>
+    <div class="fg full" style="font-size:12px;color:var(--muted);line-height:1.7" data-i18n="alert_cfg_hint"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('alertCfgModal')" data-i18n="btn_cancel">إلغاء</button><button class="btn btn-primary" onclick="saveAlertCfg()" data-i18n="btn_save">💾 حفظ</button></div>
+</div></div>
+
 <div class="modal-overlay" id="settleModal"><div class="modal">
   <div class="modal-drag"></div><h3 id="settleModalTitle">📝 إضافة ملاحظة</h3>
   <div class="form-grid">
@@ -810,6 +821,10 @@ ar: {
   avg_consumption:'متوسط الاستهلاك الكلي (لتر/100كم)', consumption_trend:'📈 اتجاه استهلاك الوقود (لتر/100كم)',
   fillup_label:'تعبئة بنزين',
   no_alerts_yet:'لم تضف أي تنبيهات',
+  alert_cfg_btn:'⚙️ إعدادات ظهور التنبيهات', alert_cfg_title:'⚙️ متى تظهر التنبيهات؟',
+  alert_cfg_km:'قبل الموعد بـ (كم)', alert_cfg_days:'قبل الموعد بـ (يوم)',
+  alert_cfg_hint:'بتنطبق على تنبيهات الزيوت والفلاتر والصيانة اللي ليها موعد قادم (بالكيلومتر أو بالتاريخ/الشهور). التنبيهات اليدوية ليها إعداد "التنبيه قبل بـ" الخاص بيها.',
+  alert_cfg_saved:'✅ تم حفظ الإعدادات', alert_cfg_invalid:'ادخل أرقام صحيحة (0 أو أكثر)',
   no_notes_yet:'لم تضف أي ملاحظة بعد', add_first_note:'+ إضافة أول ملاحظة', no_matches:'مفيش نتائج', all_cat:'📋 الكل',
   cat_parts_label:'قطع غيار', cat_belts_label:'سيور وجوانات', cat_filters_label:'فلاتر', cat_sensors_label:'حساسات',
   cat_fluids_label:'زيوت وسوائل', cat_electric_label:'كهرباء', cat_brakes_label:'فرامل', cat_expenses_label:'مصاريف', cat_other_label:'أخرى',
@@ -948,6 +963,10 @@ en: {
   avg_consumption:'Overall Average Consumption (L/100km)', consumption_trend:'📈 Fuel Consumption Trend (L/100km)',
   fillup_label:'Fuel Fill-up',
   no_alerts_yet:"You haven't added any alerts",
+  alert_cfg_btn:'⚙️ Alert timing settings', alert_cfg_title:'⚙️ When should alerts appear?',
+  alert_cfg_km:'Before due by (km)', alert_cfg_days:'Before due by (days)',
+  alert_cfg_hint:'Applies to alerts for oils, filters and maintenance that have a next due point (km or date/months). Manual alerts use their own "notify before" setting.',
+  alert_cfg_saved:'✅ Settings saved', alert_cfg_invalid:'Enter valid numbers (0 or more)',
   no_notes_yet:"You haven't added any notes yet", add_first_note:'+ Add First Note', no_matches:'No matches', all_cat:'📋 All',
   cat_parts_label:'Spare Parts', cat_belts_label:'Belts & Gaskets', cat_filters_label:'Filters', cat_sensors_label:'Sensors',
   cat_fluids_label:'Oils & Fluids', cat_electric_label:'Electrical', cat_brakes_label:'Brakes', cat_expenses_label:'Expenses', cat_other_label:'Other',
@@ -1395,6 +1414,44 @@ function checkAndNotifyAlerts(force){
   });
 }
 
+// ── إعدادات ظهور التنبيهات (عامة لكل العربيات) ──
+const ALERT_CFG_KEY='CMD3_alertCfg';
+function getAlertCfg(){let c={};try{c=JSON.parse(localStorage.getItem(ALERT_CFG_KEY)||'{}')||{};}catch(e){}
+  const n=(x,d)=>(x!=null&&x!==''&&isFinite(Number(x))&&Number(x)>=0)?Number(x):d;
+  return {km:n(c.km,500),days:n(c.days,7)};}
+function openAlertCfg(){const c=getAlertCfg();el('acfg_km').value=c.km;el('acfg_days').value=c.days;openModal('alertCfgModal');}
+function saveAlertCfg(){const km=v('acfg_km'),days=v('acfg_days');
+  if(km===''||days===''||Number(km)<0||Number(days)<0||!isFinite(Number(km))||!isFinite(Number(days)))return alert(t('alert_cfg_invalid'));
+  localStorage.setItem(ALERT_CFG_KEY,JSON.stringify({km:Number(km),days:Number(days)}));
+  closeModal('alertCfgModal');renderHome();showToast(t('alert_cfg_saved'));}
+
+// ── ربط التنبيهات بالقطع: نفس القطعة/السائل = نفس المجموعة (الأدق الأول) ──
+const PART_GROUPS=[
+  ['ماء البطاريه','مياه بطاريه','battery water'],
+  ['زيت الفرامل','زيت فرامل','brake fluid'],
+  ['زيت التوجيه','زيت توجيه','زيت باور','power steering'],
+  ['زيت ناقل','زيت الجير','زيت جير','gearbox','gear oil'],
+  ['فلتر الزيت','فلتر زيت','oil filter'],
+  ['فلتر الهواء','فلتر هواء','air filter'],
+  ['فلتر الوقود','فلتر وقود','فلتر البنزين','فلتر بنزين','fuel filter'],
+  ['فلتر المكيف','فلتر مكيف','فلتر الكابينه','فلتر كابينه','cabin filter'],
+  ['ماء الراديياتير','ماء الراديتير','ماء الرادياتير','مياه','ميه','راديتير','رادياتير','coolant','radiator'],
+  ['سير التوقيت','سير توقيت','تايمنج','timing belt'],
+  ['سير المروحه','سير مروحه','سير الكتينه','سير كتينه','سير دينامو','fan belt'],
+  ['بواجي','بواجى','بوجيه','بوجيهات','spark plug'],
+  ['تيل فرامل','تيل الفرامل','فرامل','brake'],
+  ['بطاريه','اكيومليتر','battery'],
+  ['فريون','تكييف','شحن غاز','ac gas'],
+  ['مساحات','مساحه','wiper'],
+  ['زيت المحرك','زيت موتور','engine oil','تغيير زيت']
+];
+function normAr(s){return(s||'').replace(/[إأآا]/g,'ا').replace(/[ىي]/g,'ي').replace(/[ةه]/g,'ه').replace(/\s+/g,' ').trim().toLowerCase();}
+function partGroupOf(text){const n=normAr(text);
+  for(let i=0;i<PART_GROUPS.length;i++){if(PART_GROUPS[i].some(k=>n.includes(normAr(k))))return i;}
+  return -1;}
+function closeMatchingAlerts(text){const g=partGroupOf(text);if(g<0)return;
+  (D.alerts||[]).forEach(a=>{if(!a.done&&partGroupOf(a.title)===g)a.done=true;});}
+
 function getActiveAlerts(){
   const res=[];const td=new Date();td.setHours(0,0,0,0);const curKm=Number(D.car.km)||0;
   D.alerts.forEach(a=>{if(a.done)return;
@@ -1403,8 +1460,32 @@ function getActiveAlerts(){
     else if(a.type==='km'&&a.km){const target=Number(a.km),b=Number(a.before)||0;
       if(curKm>=target-b){const diff=target-curKm;res.push({title:a.title,desc:diff<=0?t('alert_km_overdue'):tpl('alert_km_remaining',{n:diff.toLocaleString()}),urgent:diff<=0});}}
   });
-  D.oil.forEach(o=>{if(o.next_km&&curKm>=Number(o.next_km)-500){const diff=Number(o.next_km)-curKm;
-    res.push({title:t('alert_change_prefix')+' '+tv('oilType',o.type),desc:diff<=0?t('alert_time_to_change'):tpl('alert_km_remaining',{n:diff.toLocaleString()}),urgent:diff<=0});}});
+  // آخر تسجيل بس لكل نوع زيت/سائل — التسجيلات القديمة ما بتطلعش تنبيه
+  const latestOil={};
+  D.oil.forEach(o=>{const k=o.type||'';const cur=latestOil[k];
+    if(!cur||new Date(o.date||0)>=new Date(cur.date||0))latestOil[k]=o;});
+  const cfg=getAlertCfg();
+  Object.values(latestOil).forEach(o=>{
+    const title=t('alert_change_prefix')+' '+tv('oilType',o.type);
+    let hit=null;
+    if(o.next_km&&curKm>=Number(o.next_km)-cfg.km){const diff=Number(o.next_km)-curKm;
+      hit={title,desc:diff<=0?t('alert_time_to_change'):tpl('alert_km_remaining',{n:diff.toLocaleString()}),urgent:diff<=0};}
+    if(o.next_months&&o.date&&!isNaN(new Date(o.date))){const d=new Date(o.date);d.setMonth(d.getMonth()+Number(o.next_months));
+      const diff=Math.round((d-td)/86400000);
+      if(diff<=cfg.days){const h2={title,desc:diff<0?tpl('alert_overdue_days',{n:Math.abs(diff)}):diff===0?t('alert_today'):tpl('alert_in_days',{n:diff}),urgent:diff<=0};
+        if(!hit||(h2.urgent&&!hit.urgent))hit=h2;}}
+    if(hit)res.push(hit);
+  });
+  // الصيانة: آخر تسجيل بس لكل قطعة، ولو ليه موعد قادم (كم أو تاريخ)
+  const latestM={};
+  D.maintenance.forEach(m=>{const k=partGroupOf(m.title)>=0?'g'+partGroupOf(m.title):'t'+normAr(m.title);const c=latestM[k];
+    if(!c||new Date(m.date||0)>=new Date(c.date||0))latestM[k]=m;});
+  Object.values(latestM).forEach(m=>{
+    if(m.next_km&&curKm>=Number(m.next_km)-cfg.km){const diff=Number(m.next_km)-curKm;
+      res.push({title:m.title,desc:diff<=0?t('alert_km_overdue'):tpl('alert_km_remaining',{n:diff.toLocaleString()}),urgent:diff<=0});}
+    else if(m.next_date){const d=new Date(m.next_date);const diff=Math.round((d-td)/86400000);
+      if(diff<=cfg.days)res.push({title:m.title,desc:diff<0?tpl('alert_overdue_days',{n:Math.abs(diff)}):diff===0?t('alert_today'):tpl('alert_in_days',{n:diff}),urgent:diff<=0});}
+  });
   return res;
 }
 
@@ -1490,7 +1571,7 @@ function renderOil(){
   const nob=el('oilNextChange');
   if(last&&last.next_km){
     const cur=Number(D.car.km)||0,tgt=Number(last.next_km),rem=tgt-cur;
-    const col=rem<0?'var(--red)':rem<500?'var(--yellow)':'var(--green)';
+    const col=rem<0?'var(--red)':rem<getAlertCfg().km?'var(--yellow)':'var(--green)';
     nob.innerHTML=`<div class="nob"><div><div class="nt">${t('oil_change_due')}</div><div class="nv">${tgt.toLocaleString()} ${t('unit_km')}</div></div><div style="text-align:center"><div class="nr" style="color:${col}">${rem>0?rem.toLocaleString():'⚠️'}</div><div class="nl">${rem>0?t('km_remaining'):t('time_now')}</div></div></div>`;
   }else nob.innerHTML='';
   const le=el('oilList');
@@ -1533,8 +1614,14 @@ function saveOil(){
   const filters=Object.keys(FN).filter(k=>el('om_f_'+k).checked).map(k=>FN[k]);
   const rec={type:v('om_type'),brand:v('om_brand'),qty:v('om_qty'),price:v('om_price'),km:v('om_km'),date:v('om_date'),next_km:v('om_next_km'),next_months:v('om_next_months'),notes:v('om_notes'),filters};
   if(!rec.type)return alert(t('val_choose_fluid'));
+  // "القادم بعد (كم)": لو الرقم أصغر من عداد التسجيل يعتبر مسافة ويتضاف للعداد
+  if(rec.next_km&&rec.km&&Number(rec.next_km)<Number(rec.km))rec.next_km=String(Number(rec.km)+Number(rec.next_km));
   if(eOil>=0)D.oil[eOil]=rec;else D.oil.push(rec);
-  save();closeModal('oilModal');renderOil();
+  // تحديث عداد العربية لو قراءة التسجيل أعلى
+  if(rec.km&&Number(rec.km)>(Number(D.car.km)||0))D.car.km=rec.km;
+  // تسجيل جديد = التنبيهات اليدوية لنفس القطعة/السائل بس تتقفل
+  if(eOil<0)closeMatchingAlerts((rec.type||'')+' '+(rec.brand||''));
+  save();closeModal('oilModal');renderOil();renderHome();
 }
 function deleteOil(idx){showConfirm(t('confirm_delete_oil_title'),t('confirm_generic_desc'),()=>{D.oil.splice(idx,1);save();renderOil();});}
 
@@ -1574,6 +1661,8 @@ function saveMaint(){
   const rec={title:v('mm_title'),cost:v('mm_cost'),km:v('mm_km'),date:v('mm_date'),next_km:v('mm_next_km'),next_date:v('mm_next_date'),priority:v('mm_priority'),status:v('mm_status'),notes:v('mm_notes')};
   if(!rec.title)return alert(t('val_enter_maint_type'));
   if(eMaint>=0)D.maintenance[eMaint]=rec;else D.maintenance.push(rec);
+  if(eMaint<0)closeMatchingAlerts(rec.title);
+  if(rec.km&&Number(rec.km)>(Number(D.car.km)||0))D.car.km=rec.km;
   save();closeModal('maintModal');renderMaint();
 }
 function deleteMaint(idx){showConfirm(t('confirm_delete_maint_title'),t('confirm_generic_desc'),()=>{D.maintenance.splice(idx,1);save();renderMaint();});}
