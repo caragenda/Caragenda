@@ -467,10 +467,11 @@ textarea{resize:vertical;min-height:65px}
     <div class="fg"><label data-i18n="lbl_brand_type">الماركة / النوع</label><input id="om_brand" placeholder="موتول 15-50"></div>
     <div class="fg"><label data-i18n="lbl_qty_liters">الكمية (لتر)</label><input id="om_qty" type="number" step="0.5" inputmode="decimal" placeholder="3.5"></div>
     <div class="fg"><label data-i18n="lbl_price">السعر (جنيه)</label><input id="om_price" type="number" inputmode="numeric" placeholder="1200"></div>
-    <div class="fg"><label data-i18n="lbl_km">الكيلومترات</label><input id="om_km" type="number" inputmode="numeric" placeholder="230600"></div>
-    <div class="fg"><label data-i18n="lbl_date">التاريخ</label><input id="om_date" type="date"></div>
-    <div class="fg"><label data-i18n="lbl_next_km">القادم بعد (كم)</label><input id="om_next_km" type="number" inputmode="numeric" placeholder="5000"></div>
-    <div class="fg"><label data-i18n="lbl_next_months">أو بعد (شهر)</label><input id="om_next_months" type="number" inputmode="numeric" placeholder="6"></div>
+    <div class="fg"><label data-i18n="lbl_km">الكيلومترات</label><input id="om_km" type="number" inputmode="numeric" placeholder="230600" oninput="updateOilNextPreview()"></div>
+    <div class="fg"><label data-i18n="lbl_date">التاريخ</label><input id="om_date" type="date" onchange="updateOilNextPreview()"></div>
+    <div class="fg"><label data-i18n="lbl_next_km">يتغير بعد كام كم؟</label><input id="om_next_km" type="number" inputmode="numeric" placeholder="5000" oninput="updateOilNextPreview()"></div>
+    <div class="fg"><label data-i18n="lbl_next_months">أو بعد كام شهر؟</label><input id="om_next_months" type="number" inputmode="numeric" placeholder="6" oninput="updateOilNextPreview()"></div>
+    <div class="fg full" id="om_next_preview" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
     <div class="fg full"><label data-i18n="lbl_notes">ملاحظات</label><textarea id="om_notes" placeholder="مكان الشراء، تفاصيل..." data-i18n-ph="ph_purchase_details"></textarea></div>
   </div>
   <div class="filter-section" id="om_filters_section">
@@ -584,11 +585,22 @@ textarea{resize:vertical;min-height:65px}
 </div></div>
 
 <!-- SETTLE -->
+<div class="modal-overlay" id="odoModal"><div class="modal">
+  <div class="modal-drag"></div><h3 data-i18n="odo_title">🚗 قراءة العداد الحالية</h3>
+  <div class="form-grid">
+    <div class="fg full" style="font-size:12px;color:var(--muted);line-height:1.8"><span data-i18n="odo_desc">المسجّلة حالياً:</span> <b id="odo_cur" style="color:var(--text)"></b></div>
+    <div class="fg full"><label data-i18n="odo_input">القراءة الفعلية دلوقتي (كم)</label><input id="odo_km" type="number" inputmode="numeric" placeholder="233000"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('odoModal')" data-i18n="odo_later">مش دلوقتي</button><button class="btn btn-primary" onclick="saveOdo()" data-i18n="odo_update">💾 تحديث</button></div>
+  <button class="btn btn-ghost btn-block" style="margin-top:6px;font-size:12px" onclick="odoNever()" data-i18n="odo_never">🔕 لا تسألني تاني</button>
+</div></div>
+
 <div class="modal-overlay" id="alertCfgModal"><div class="modal">
   <div class="modal-drag"></div><h3 data-i18n="alert_cfg_title">⚙️ متى تظهر التنبيهات؟</h3>
   <div class="form-grid">
     <div class="fg"><label data-i18n="alert_cfg_km">قبل الموعد بـ (كم)</label><input id="acfg_km" type="number" inputmode="numeric" min="0" placeholder="500"></div>
     <div class="fg"><label data-i18n="alert_cfg_days">قبل الموعد بـ (يوم)</label><input id="acfg_days" type="number" inputmode="numeric" min="0" placeholder="7"></div>
+    <div class="fg full"><label data-i18n="alert_cfg_odo">اسأل عن قراءة العداد عند فتح التطبيق</label><select id="acfg_odo"><option value="1" data-i18n="opt_yes">نعم</option><option value="0" data-i18n="opt_no">لا</option></select></div>
     <div class="fg full" style="font-size:12px;color:var(--muted);line-height:1.7" data-i18n="alert_cfg_hint"></div>
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('alertCfgModal')" data-i18n="btn_cancel">إلغاء</button><button class="btn btn-primary" onclick="saveAlertCfg()" data-i18n="btn_save">💾 حفظ</button></div>
@@ -763,8 +775,8 @@ ar: {
   fuel_petrol:'بنزين', fuel_diesel:'ديزل', fuel_gas:'غاز طبيعي', fuel_electric:'كهرباء',
   trans_manual:'يدوي', trans_auto:'أوتوماتيك', other:'أخرى',
   lbl_fluid_type:'نوع السائل', lbl_brand_type:'الماركة / النوع', lbl_qty_liters:'الكمية (لتر)',
-  lbl_price:'السعر (جنيه)', lbl_km:'الكيلومترات', lbl_date:'التاريخ', lbl_next_km:'القادم بعد (كم)',
-  lbl_next_months:'أو بعد (شهر)', ph_purchase_details:'مكان الشراء، تفاصيل...',
+  lbl_price:'السعر (جنيه)', lbl_km:'الكيلومترات', lbl_date:'التاريخ', lbl_next_km:'يتغير بعد كام كم؟',
+  lbl_next_months:'أو بعد كام شهر؟', ph_purchase_details:'مكان الشراء، تفاصيل...',
   oil_engine:'زيت المحرك', oil_gearbox:'زيت ناقل الحركة', oil_brake:'زيت الفرامل', oil_steering:'زيت التوجيه',
   oil_radiator:'ماء الرادياتير', oil_battery_water:'ماء البطارية',
   filter_oil:'فلتر الزيت', filter_air:'فلتر الهواء', filter_fuel:'فلتر الوقود', filter_ac:'فلتر المكيف', filter_cabin:'فلتر الكابينة',
@@ -824,7 +836,12 @@ ar: {
   alert_cfg_btn:'⚙️ إعدادات ظهور التنبيهات', alert_cfg_title:'⚙️ متى تظهر التنبيهات؟',
   alert_cfg_km:'قبل الموعد بـ (كم)', alert_cfg_days:'قبل الموعد بـ (يوم)',
   alert_cfg_hint:'بتنطبق على تنبيهات الزيوت والفلاتر والصيانة اللي ليها موعد قادم (بالكيلومتر أو بالتاريخ/الشهور). التنبيهات اليدوية ليها إعداد "التنبيه قبل بـ" الخاص بيها.',
-  alert_cfg_saved:'✅ تم حفظ الإعدادات', alert_cfg_invalid:'ادخل أرقام صحيحة (0 أو أكثر)',
+  alert_cfg_saved:'✅ تم حفظ الإعدادات',
+  alert_cfg_odo:'اسأل عن قراءة العداد عند فتح التطبيق', opt_yes:'نعم', opt_no:'لا',
+  odo_title:'🚗 قراءة العداد الحالية', odo_desc:'المسجّلة حالياً:', odo_input:'القراءة الفعلية دلوقتي (كم)',
+  odo_later:'مش دلوقتي', odo_update:'💾 تحديث', odo_never:'🔕 لا تسألني تاني (ترجّعه من إعدادات التنبيهات)',
+  odo_saved:'✅ تم تحديث العداد', odo_never_done:'🔕 تم إيقاف سؤال العداد',
+  odo_lower_title:'القراءة أقل من المسجّلة', odo_lower_desc:'العداد المسجّل {n} كم والقراءة الجديدة أقل منه. متأكد؟', alert_cfg_invalid:'ادخل أرقام صحيحة (0 أو أكثر)',
   no_notes_yet:'لم تضف أي ملاحظة بعد', add_first_note:'+ إضافة أول ملاحظة', no_matches:'مفيش نتائج', all_cat:'📋 الكل',
   cat_parts_label:'قطع غيار', cat_belts_label:'سيور وجوانات', cat_filters_label:'فلاتر', cat_sensors_label:'حساسات',
   cat_fluids_label:'زيوت وسوائل', cat_electric_label:'كهرباء', cat_brakes_label:'فرامل', cat_expenses_label:'مصاريف', cat_other_label:'أخرى',
@@ -905,8 +922,8 @@ en: {
   fuel_petrol:'Petrol', fuel_diesel:'Diesel', fuel_gas:'Natural Gas', fuel_electric:'Electric',
   trans_manual:'Manual', trans_auto:'Automatic', other:'Other',
   lbl_fluid_type:'Fluid Type', lbl_brand_type:'Brand / Type', lbl_qty_liters:'Quantity (liters)',
-  lbl_price:'Price (EGP)', lbl_km:'Mileage', lbl_date:'Date', lbl_next_km:'Next change in (km)',
-  lbl_next_months:'Or after (months)', ph_purchase_details:'Where you bought it, details...',
+  lbl_price:'Price (EGP)', lbl_km:'Mileage', lbl_date:'Date', lbl_next_km:'Change after how many km?',
+  lbl_next_months:'Or after how many months?', ph_purchase_details:'Where you bought it, details...',
   oil_engine:'Engine Oil', oil_gearbox:'Gearbox Oil', oil_brake:'Brake Fluid', oil_steering:'Power Steering Fluid',
   oil_radiator:'Radiator Coolant', oil_battery_water:'Battery Water',
   filter_oil:'Oil Filter', filter_air:'Air Filter', filter_fuel:'Fuel Filter', filter_ac:'A/C Filter', filter_cabin:'Cabin Filter',
@@ -966,7 +983,12 @@ en: {
   alert_cfg_btn:'⚙️ Alert timing settings', alert_cfg_title:'⚙️ When should alerts appear?',
   alert_cfg_km:'Before due by (km)', alert_cfg_days:'Before due by (days)',
   alert_cfg_hint:'Applies to alerts for oils, filters and maintenance that have a next due point (km or date/months). Manual alerts use their own "notify before" setting.',
-  alert_cfg_saved:'✅ Settings saved', alert_cfg_invalid:'Enter valid numbers (0 or more)',
+  alert_cfg_saved:'✅ Settings saved',
+  alert_cfg_odo:'Ask for odometer reading when opening the app', opt_yes:'Yes', opt_no:'No',
+  odo_title:'🚗 Current odometer reading', odo_desc:'Currently saved:', odo_input:'Actual reading now (km)',
+  odo_later:'Not now', odo_update:'💾 Update', odo_never:"🔕 Don't ask again (re-enable in alert settings)",
+  odo_saved:'✅ Odometer updated', odo_never_done:'🔕 Odometer prompt turned off',
+  odo_lower_title:'Lower than saved reading', odo_lower_desc:'Saved odometer is {n} km and the new value is lower. Are you sure?', alert_cfg_invalid:'Enter valid numbers (0 or more)',
   no_notes_yet:"You haven't added any notes yet", add_first_note:'+ Add First Note', no_matches:'No matches', all_cat:'📋 All',
   cat_parts_label:'Spare Parts', cat_belts_label:'Belts & Gaskets', cat_filters_label:'Filters', cat_sensors_label:'Sensors',
   cat_fluids_label:'Oils & Fluids', cat_electric_label:'Electrical', cat_brakes_label:'Brakes', cat_expenses_label:'Expenses', cat_other_label:'Other',
@@ -1416,13 +1438,45 @@ function checkAndNotifyAlerts(force){
 
 // ── إعدادات ظهور التنبيهات (عامة لكل العربيات) ──
 const ALERT_CFG_KEY='CMD3_alertCfg';
+const ODO_PROMPT_KEY='CMD3_odoPrompt';
+let odoAsked=false;
+function odoPromptEnabled(){return localStorage.getItem(ODO_PROMPT_KEY)!=='0';}
+function maybeAskOdometer(){
+  if(!odoPromptEnabled()||odoAsked)return;
+  if(!D.car||!D.car.brand)return;
+  if(document.querySelector('.modal-overlay.open'))return;
+  odoAsked=true;
+  el('odo_cur').textContent=D.car.km?Number(D.car.km).toLocaleString()+' '+t('unit_km'):'—';
+  el('odo_km').value=D.car.km||'';
+  openModal('odoModal');
+}
+function applyOdo(val){
+  D.car.km=String(val);save();closeModal('odoModal');renderHome();
+  const ap=document.querySelector('.page.active');if(ap)renderPage(ap.id.replace('page-',''));
+  showToast(t('odo_saved'));
+}
+function saveOdo(){
+  const val=v('odo_km'),n=Number(val),cur=Number(D.car.km)||0;
+  if(val===''||!isFinite(n)||n<=0)return alert(t('alert_cfg_invalid'));
+  if(n===cur){closeModal('odoModal');return;}
+  if(n<cur)return showConfirm(t('odo_lower_title'),tpl('odo_lower_desc',{n:cur.toLocaleString()}),()=>applyOdo(n));
+  applyOdo(n);
+}
+function odoNever(){localStorage.setItem(ODO_PROMPT_KEY,'0');closeModal('odoModal');showToast(t('odo_never_done'));}
+// رجوع للتطبيق بعد غياب طويل = اسأل تاني
+let odoHiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){odoHiddenAt=Date.now();return;}
+  if(odoHiddenAt&&Date.now()-odoHiddenAt>3*3600*1000&&typeof isActivated==='function'&&isActivated()){odoAsked=false;maybeAskOdometer();}
+});
 function getAlertCfg(){let c={};try{c=JSON.parse(localStorage.getItem(ALERT_CFG_KEY)||'{}')||{};}catch(e){}
   const n=(x,d)=>(x!=null&&x!==''&&isFinite(Number(x))&&Number(x)>=0)?Number(x):d;
   return {km:n(c.km,500),days:n(c.days,7)};}
-function openAlertCfg(){const c=getAlertCfg();el('acfg_km').value=c.km;el('acfg_days').value=c.days;openModal('alertCfgModal');}
+function openAlertCfg(){const c=getAlertCfg();el('acfg_km').value=c.km;el('acfg_days').value=c.days;el('acfg_odo').value=odoPromptEnabled()?'1':'0';openModal('alertCfgModal');}
 function saveAlertCfg(){const km=v('acfg_km'),days=v('acfg_days');
   if(km===''||days===''||Number(km)<0||Number(days)<0||!isFinite(Number(km))||!isFinite(Number(days)))return alert(t('alert_cfg_invalid'));
   localStorage.setItem(ALERT_CFG_KEY,JSON.stringify({km:Number(km),days:Number(days)}));
+  localStorage.setItem(ODO_PROMPT_KEY,el('acfg_odo').value==='0'?'0':'1');
   closeModal('alertCfgModal');renderHome();showToast(t('alert_cfg_saved'));}
 
 // ── ربط التنبيهات بالقطع: نفس القطعة/السائل = نفس المجموعة (الأدق الأول) ──
@@ -1602,20 +1656,36 @@ function openOilModal(idx=-1){
   el('oilModalTitle').textContent=idx>=0?(LANG==='en'?'✏️ Edit Oil Record':'✏️ تعديل سجل الزيت'):(LANG==='en'?'🛢️ Log Oil Change':'🛢️ تسجيل تغيير زيت');
   el('om_type').value=o.type||'زيت المحرك';el('om_brand').value=o.brand||'';
   el('om_qty').value=o.qty||'';el('om_price').value=o.price||'';
-  el('om_km').value=o.km||'';el('om_date').value=o.date||today();
+  el('om_km').value=o.km||(idx<0?(D.car.km||''):'');el('om_date').value=o.date||today();
   el('om_next_km').value=o.next_km||'';el('om_next_months').value=o.next_months||'';el('om_notes').value=o.notes||'';
   Object.keys(FN).forEach(k=>{const cb=el('om_f_'+k);cb.checked=(o.filters||[]).includes(FN[k]);el('lbl_f_'+k).classList.toggle('on',cb.checked);});
-  toggleOilFilters(el('om_type').value);openModal('oilModal');
+  toggleOilFilters(el('om_type').value);updateOilNextPreview();openModal('oilModal');
 }
 function editOil(idx){openOilModal(idx);}
 function toggleOilFilters(val){el('om_filters_section').style.display=['زيت المحرك','زيت ناقل الحركة','زيت الفرامل'].includes(val)?'':'none';}
 function syncCheck(cb,lblId){el(lblId).classList.toggle('on',cb.checked);}
+function computeNextKm(nextRaw,kmRaw){
+  const nx=Number(nextRaw);if(!nextRaw||!isFinite(nx)||nx<=0)return '';
+  const base=Number(kmRaw)||Number(D.car.km)||0;
+  return String(base&&nx<base?base+nx:nx);
+}
+function updateOilNextPreview(){
+  const box=el('om_next_preview');if(!box)return;
+  const km=v('om_km'),nk=v('om_next_km'),nm=v('om_next_months'),dt=v('om_date');
+  const base=Number(km)||Number(D.car.km)||0;const parts=[];
+  if(nk){const r=computeNextKm(nk,km);
+    parts.push(LANG==='en'?`🛣️ Next change at <b>${Number(r).toLocaleString()} km</b> (odometer ${base.toLocaleString()} + ${(Number(r)-base).toLocaleString()})`
+      :`🛣️ الموعد القادم عند عداد <b>${Number(r).toLocaleString()} كم</b> (العداد ${base.toLocaleString()} + ${(Number(r)-base).toLocaleString()})`);}
+  if(nm&&dt&&!isNaN(new Date(dt))){const d=new Date(dt);d.setMonth(d.getMonth()+Number(nm));const ds=d.toISOString().slice(0,10);
+    parts.push(LANG==='en'?`📅 Or on <b>${ds}</b>`:`📅 أو بتاريخ <b>${ds}</b>`);}
+  box.innerHTML=parts.join('<br>');
+}
 function saveOil(){
   const filters=Object.keys(FN).filter(k=>el('om_f_'+k).checked).map(k=>FN[k]);
   const rec={type:v('om_type'),brand:v('om_brand'),qty:v('om_qty'),price:v('om_price'),km:v('om_km'),date:v('om_date'),next_km:v('om_next_km'),next_months:v('om_next_months'),notes:v('om_notes'),filters};
   if(!rec.type)return alert(t('val_choose_fluid'));
-  // "القادم بعد (كم)": لو الرقم أصغر من عداد التسجيل يعتبر مسافة ويتضاف للعداد
-  if(rec.next_km&&rec.km&&Number(rec.next_km)<Number(rec.km))rec.next_km=String(Number(rec.km)+Number(rec.next_km));
+  // "يتغير بعد كام كم": لو الرقم أصغر من العداد يعتبر مسافة ويتضاف عليه (عداد التسجيل، أو عداد العربية لو فاضي)
+  rec.next_km=computeNextKm(rec.next_km,rec.km);
   if(eOil>=0)D.oil[eOil]=rec;else D.oil.push(rec);
   // تحديث عداد العربية لو قراءة التسجيل أعلى
   if(rec.km&&Number(rec.km)>(Number(D.car.km)||0))D.car.km=rec.km;
@@ -2406,6 +2476,7 @@ document.addEventListener('DOMContentLoaded', function(){
   } else {
     verifyDevice();
     periodicRevalidate();
+    maybeAskOdometer();
   }
 });
 </script>
